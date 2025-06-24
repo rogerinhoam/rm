@@ -1,38 +1,200 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste de Diagnóstico</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>R.M. Estética Automotiva - Gestão</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #121212; font-family: monospace, sans-serif; color: white; padding: 20px; }
-        #output { border: 2px dashed #555; padding: 20px; font-size: 1.2rem; }
-        .success { color: #76ff03; }
-        .error { color: #ff5252; }
+      :root {
+        --bg-primary: #121212; --bg-secondary: #1C1C1E; --bg-tertiary: #2a2a2a;
+        --accent-primary: #d32f2f; --text-primary: #e0e0e0; --text-secondary: #b0b0b0;
+        --border-color: rgba(255, 255, 255, 0.1); --border-radius: 12px;
+      }
+      * { box-sizing: border-box; }
+      body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-family); margin: 0; }
+      header { background: var(--accent-primary); color: #fff; padding: 16px; text-align: center; font-size: 1.5rem; font-weight: 700; }
+      nav { display: flex; background: #1a1a1a; justify-content: center; flex-wrap: wrap; }
+      nav button { background: transparent; color: var(--text-secondary); border: none; padding: 15px 20px; cursor: pointer; font-weight: 600; }
+      nav button.active { color: #fff; background: var(--accent-primary); }
+      main { padding: 20px; max-width: 900px; margin: auto; }
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+      .card { background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+      form label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
+      form input { width: 100%; padding: 12px; margin-bottom: 18px; border: 1px solid var(--border-color); background-color: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; font-size: 1rem; }
+      form button { background: var(--accent-primary); color: #fff; border: none; width: 100%; padding: 14px; cursor: pointer; font-weight: 700; font-size: 1rem; border-radius: 8px; }
+      form button:disabled { background-color: #555; }
+      .item-list { list-style: none; padding: 0; margin-top: 20px; }
+      .item-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+      .item-list li:last-child { border-bottom: none; }
+      .item-actions button { background: none; border: none; padding: 8px; cursor: pointer; color: var(--text-secondary); }
+      .item-actions svg { width: 20px; height: 20px; stroke: currentColor; }
+      .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+      .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; }
     </style>
 </head>
 <body>
-    <h1>Página de Diagnóstico</h1>
-    <p>Abaixo, você deve ver uma mensagem de sucesso em verde. Se não vir, ou se um alerta de erro aparecer, algo está impedindo o JavaScript de rodar corretamente.</p>
-    <div id="output">Iniciando teste...</div>
 
-    <script>
-        // Este é um teste para garantir que o JavaScript mais básico funciona no seu ambiente.
-        try {
-            document.addEventListener('DOMContentLoaded', () => {
-                const outputDiv = document.getElementById('output');
-                if (outputDiv) {
-                    outputDiv.innerHTML = '<span class="success">SUCESSO: O JavaScript está funcionando corretamente nesta página.</span>';
-                    console.log('Diagnóstico: SUCESSO. O DOM e o JavaScript básico estão operacionais.');
-                } else {
-                    // Este alerta só apareceria se o HTML estivesse quebrado.
-                    alert("ERRO DE DIAGNÓSTICO NÍVEL 1: O elemento 'output' não foi encontrado. O HTML não carregou.");
-                }
-            });
-        } catch (e) {
-            // Este alerta apareceria se o navegador bloqueasse o script inteiro.
-            alert(`ERRO DE DIAGNÓSTICO NÍVEL 2: Ocorreu um erro fatal que impediu o JavaScript de rodar. Mensagem: ${e.message}`);
+<header>R.M. ESTÉTICA AUTOMOTIVA</header>
+<nav>
+  <button data-tab="clientes">Clientes</button>
+  <button data-tab="servicos">Serviços</button>
+  <button data-tab="orcamentos">Novo Orçamento</button>
+  <button data-tab="historico">Histórico</button>
+</nav>
+
+<main id="main-container">
+  <section id="clientes" class="tab-content card"></section>
+  <section id="servicos" class="tab-content card" style="display:none;">(Em breve)</section>
+  <section id="orcamentos" class="tab-content card" style="display:none;">(Em breve)</section>
+  <section id="historico" class="tab-content card" style="display:none;">(Em breve)</section>
+</main>
+
+<div id="toast-container"></div>
+
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    // --- CÁPSULA DE SEGURANÇA: SÓ RODA QUANDO O HTML ESTIVER PRONTO ---
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- CONFIGURAÇÃO ---
+        const supabaseUrl = 'https://zkdfimbfwgofkmmcvyfu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprZGZpbWJmd2dvZmttbWN2eWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MzQxMTksImV4cCI6MjA2NjIxMDExOX0.vOTrEVYX30FpWPQykY5CF1QCfkyG5gDLnI_2N9TATRE';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const icons = {
+            edit: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+            delete: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+        };
+
+        // --- FUNÇÕES UTILITÁRIAS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toast.style.backgroundColor = type === 'error' ? '#d9534f' : '#28a745';
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
-    </script>
+
+        // --- LÓGICA DE CLIENTES ---
+        const clientesContainer = document.getElementById('clientes');
+
+        async function renderClientes() {
+            try {
+                const { data: clientes, error } = await supabase.from('clientes').select('*').order('nome');
+                if (error) throw error;
+                
+                clientesContainer.innerHTML = `
+                    <h3>Clientes</h3>
+                    <form id="form-cliente">
+                      <input type="hidden" name="id" />
+                      <label>Nome</label><input type="text" name="nome" required />
+                      <label>Telefone</label><input type="tel" name="telefone" />
+                      <label>Veículo</label><input type="text" name="carro" />
+                      <label>Placa</label><input type="text" name="placa" />
+                      <button type="submit" class="btn">Salvar Cliente</button>
+                    </form>
+                    <ul class="item-list">
+                        ${clientes.map(c => `
+                            <li data-id="${c.id}">
+                                <div class="item-info">${c.nome}</div>
+                                <div class="item-actions">
+                                    <button onclick="window.app.editCliente(${c.id})">${icons.edit}</button>
+                                    <button onclick="window.app.deleteCliente(${c.id})">${icons.delete}</button>
+                                </div>
+                            </li>`).join('') || `<li style="justify-content:center;">Nenhum cliente cadastrado.</li>`}
+                    </ul>`;
+                
+                document.getElementById('form-cliente').addEventListener('submit', handleClienteSubmit);
+
+            } catch (error) {
+                clientesContainer.innerHTML = `<p style="color:red;">Erro ao carregar clientes: ${error.message}</p>`;
+            }
+        }
+
+        async function handleClienteSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const button = form.querySelector('button');
+            button.disabled = true;
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            const id = data.id;
+            delete data.id;
+
+            const query = id ? supabase.from('clientes').update(data).eq('id', id) : supabase.from('clientes').insert(data);
+            const { error } = await query;
+
+            if (error) {
+                showToast(`Erro: ${error.message}`, 'error');
+            } else {
+                showToast('Cliente salvo com sucesso!', 'success');
+                await renderClientes(); // Apenas recarrega e renderiza a seção de clientes
+            }
+            button.disabled = false;
+        }
+
+        // --- FUNÇÕES GLOBAIS PARA ONCLICK ---
+        window.app = {
+            editCliente: async (id) => {
+                const { data, error } = await supabase.from('clientes').select().eq('id', id).single();
+                if (error) return showToast('Erro ao buscar cliente.', 'error');
+                
+                const form = document.getElementById('form-cliente');
+                Object.keys(data).forEach(key => {
+                    if (form[key]) form[key].value = data[key];
+                });
+                window.scrollTo(0, 0);
+            },
+            deleteCliente: async (id) => {
+                if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                    const { error } = await supabase.from('clientes').delete().eq('id', id);
+                    if (error) {
+                        showToast(`Erro ao excluir: ${error.message}`, 'error');
+                    } else {
+                        showToast('Cliente excluído!', 'success');
+                        await renderClientes();
+                    }
+                }
+            }
+        };
+
+        // --- NAVEGAÇÃO E INICIALIZAÇÃO ---
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            const tabElement = document.getElementById(tabName);
+            const navButton = document.querySelector(`nav button[data-tab="${tabName}"]`);
+
+            if (tabElement) tabElement.style.display = 'block';
+            if (navButton) navButton.classList.add('active');
+            
+            localStorage.setItem('activeTab', tabName);
+        }
+
+        document.querySelector('nav').addEventListener('click', e => {
+            if (e.target.dataset.tab) {
+                showTab(e.target.dataset.tab);
+            }
+        });
+
+        // --- CARGA INICIAL ---
+        async function init() {
+            const activeTab = localStorage.getItem('activeTab') || 'clientes';
+            showTab(activeTab);
+            await renderClientes(); // Começa carregando apenas os clientes
+        }
+
+        init();
+    });
+</script>
 </body>
 </html>
