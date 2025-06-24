@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>R.M. Estética Automotiva - Gestão</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-primary: #121212; --bg-secondary: #1C1C1E; --accent-primary: #d32f2f; --text-primary: #e0e0e0; 
+        --text-secondary: #b0b0b0; --border-color: #333; --border-radius: 8px;
+      }
+      * { box-sizing: border-box; }
+      body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; margin: 0; }
+      header { background: var(--accent-primary); color: #fff; padding: 1rem; text-align: center; font-size: 1.5rem; font-weight: 700; }
+      nav { display: flex; background: #1a1a1a; justify-content: center; flex-wrap: wrap; }
+      nav button { background: transparent; color: var(--text-secondary); border: none; padding: 15px 20px; cursor: pointer; font-weight: 600; font-size: 1rem; flex-grow: 1; }
+      nav button.active { color: #fff; background: var(--accent-primary); }
+      main { padding: 1rem; max-width: 800px; margin: auto; }
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+      .card { background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+      form { display: flex; flex-direction: column; gap: 1rem; }
+      form label { font-weight: 600; color: var(--text-secondary); }
+      form input, form select { width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); background-color: #2a2a2a; color: var(--text-primary); border-radius: 4px; font-size: 1rem; }
+      form button { background: var(--accent-primary); color: #fff; border: none; padding: 0.9rem; cursor: pointer; font-weight: 700; border-radius: 4px; font-size: 1rem; }
+      form button:disabled { background-color: #555; }
+      .item-list { list-style: none; padding: 0; margin-top: 1.5rem; border-top: 1px solid var(--border-color); }
+      .item-list li { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .item-actions button { background: none; border: none; padding: 8px; cursor: pointer; color: var(--text-secondary); }
+      .modal-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.7);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 4000;
+      }
+      .modal-content { background: var(--bg-secondary); padding: 25px; border-radius: 8px; text-align: center; }
+      .modal-buttons { display:flex; gap:10px; margin-top:20px; }
+      .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+      .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<header>R.M. ESTÉTICA AUTOMOTIVA</header>
+<nav>
+  <button data-tab="clientes">Clientes</button>
+  <button data-tab="servicos">Serviços</button>
+  <button data-tab="orcamentos">Orçamentos</button>
+</nav>
+
+<main id="main-container">
+  <section id="clientes" class="tab-content card"></section>
+  <section id="servicos" class="tab-content card"></section>
+  <section id="orcamentos" class="tab-content card"></section>
+</main>
+
+<div id="toast-container"></div>
+<div id="modal-confirm" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <p id="modal-text"></p>
+        <div class="modal-buttons">
+            <button id="modal-cancel-btn">Cancelar</button>
+            <button id="modal-confirm-btn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const supabaseUrl = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const mainContainer = document.getElementById('main-container');
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toast.style.backgroundColor = isError ? '#d9534f' : '#28a745';
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function showConfirmationModal(message, onConfirm) {
+            const modal = document.getElementById('modal-confirm');
+            modal.style.display = 'flex';
+            modal.querySelector('p').textContent = message;
+            const confirmBtn = modal.querySelector('#modal-confirm-btn');
+            const cancelBtn = modal.querySelector('#modal-cancel-btn');
+            const close = () => modal.style.display = 'none';
+            const newConfirmBtn = confirmBtn.cloneNode(true); // Evita múltiplos listeners
+            confirmBtn.replaceWith(newConfirmBtn);
+            newConfirmBtn.onclick = () => { close(); onConfirm(); };
+            cancelBtn.onclick = close;
+        }
+
+        async function renderTabContent(tabName) {
+            const container = document.getElementById(tabName);
+            if (!container) return;
+
+            try {
+                if (tabName === 'clientes') {
+                    const { data, error } = await supabase.from('clientes').select('*').order('nome');
+                    if (error) throw error;
+                    container.innerHTML = `<h3>Clientes</h3>
+                        <form id="form-cliente">
+                            <input type="hidden" name="id">
+                            <label>Nome</label><input type="text" name="nome" required>
+                            <label>Telefone</label><input type="tel" name="telefone">
+                            <label>Veículo</label><input type="text" name="carro">
+                            <label>Placa</label><input type="text" name="placa">
+                            <button type="submit" class="btn">Salvar Cliente</button>
+                        </form>
+                        <ul class="item-list">${(data || []).map(c => `
+                            <li data-item='${JSON.stringify(c)}'>
+                                <span>${c.nome}</span>
+                                <div class="item-actions">
+                                    <button type="button" data-action="edit">✏️</button>
+                                    <button type="button" data-action="delete">🗑️</button>
+                                </div>
+                            </li>`).join('') || `<li>Nenhum cliente cadastrado.</li>`}
+                        </ul>`;
+                } else if (tabName === 'servicos') {
+                    const { data, error } = await supabase.from('servicos').select('*').order('descricao');
+                    if (error) throw error;
+                    container.innerHTML = `<h3>Serviços</h3>
+                        <form id="form-servico">
+                            <input type="hidden" name="id">
+                            <label>Descrição</label><input type="text" name="descricao" required>
+                            <label>Valor (R$)</label><input type="number" step="0.01" name="valor" required>
+                            <button type="submit" class="btn">Salvar Serviço</button>
+                        </form>
+                        <ul class="item-list">${(data || []).map(s => `
+                            <li data-item='${JSON.stringify(s)}'>
+                                <span>${s.descricao} - R$${s.valor}</span>
+                                <div class="item-actions">
+                                    <button type="button" data-action="edit">✏️</button>
+                                    <button type="button" data-action="delete">🗑️</button>
+                                </div>
+                            </li>`).join('') || `<li>Nenhum serviço cadastrado.</li>`}
+                        </ul>`;
+                } else {
+                    container.innerHTML = `<h3>${tabName.charAt(0).toUpperCase() + tabName.slice(1)}</h3><p>(Em breve)</p>`;
+                }
+            } catch (error) {
+                showToast(`Erro ao carregar ${tabName}: ${error.message}`, true);
+            }
+        }
+
+        async function handleFormSubmit(form) {
+            const tableName = form.id.split('-')[1] + 's';
+            const button = form.querySelector('button');
+            button.disabled = true;
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            const id = data.id;
+            delete data.id;
+
+            if (data.valor) data.valor = parseFloat(data.valor);
+
+            const { error } = id ? await supabase.from(tableName).update(data).eq('id', id) : await supabase.from(tableName).insert(data);
+            
+            if (error) {
+                showToast(`Erro: ${error.message}`, true);
+            } else {
+                showToast('Salvo com sucesso!');
+                await renderTabContent(tableName); // Recarrega apenas a aba atual
+            }
+            button.disabled = false;
+        }
+
+        mainContainer.addEventListener('submit', e => {
+            e.preventDefault();
+            if (e.target.tagName === 'FORM') {
+                handleFormSubmit(e.target);
+            }
+        });
+
+        mainContainer.addEventListener('click', e => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+
+            const li = button.closest('li[data-item]');
+            const itemData = JSON.parse(li.dataset.item);
+            const form = li.closest('.tab-content').querySelector('form');
+            const tableName = form.id.split('-')[1] + 's';
+
+            if (button.dataset.action === 'edit') {
+                Object.keys(itemData).forEach(key => {
+                    if (form[key]) form[key].value = itemData[key];
+                });
+                form.querySelector('input').focus();
+            } else if (button.dataset.action === 'delete') {
+                showConfirmationModal('Tem certeza que deseja excluir?', async () => {
+                    const { error } = await supabase.from(tableName).delete().eq('id', itemData.id);
+                    if (error) { showToast(`Erro: ${error.message}`, true); }
+                    else { showToast('Excluído com sucesso!'); await renderTabContent(tableName); }
+                });
+            }
+        });
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            const tabElement = document.getElementById(tabName);
+            const navButton = document.querySelector(`nav button[data-tab="${tabName}"]`);
+
+            if (tabElement) tabElement.style.display = 'block';
+            if (navButton) navButton.classList.add('active');
+            
+            localStorage.setItem('activeTab', tabName);
+            renderTabContent(tabName); // Carrega o conteúdo da aba ao clicar
+        }
+
+        document.querySelector('nav').addEventListener('click', e => {
+            if (e.target.dataset.tab) {
+                showTab(e.target.dataset.tab);
+            }
+        });
+        
+        // --- Carga Inicial ---
+        const activeTab = localStorage.getItem('activeTab') || 'clientes';
+        showTab(activeTab);
+    });
+</script>
+
+</body>
+</html>
