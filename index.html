@@ -95,7 +95,6 @@
     const { jsPDF } = window.jspdf;
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    // --- CÁPSULA DE SEGURANÇA: NADA RODA ANTES DO HTML ESTAR 100% PRONTO ---
     document.addEventListener('DOMContentLoaded', () => {
         const supabaseUrl = 'https://zkdfimbfwgofkmmcvyfu.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprZGZpbWJmd2dvZmttbWN2eWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MzQxMTksImV4cCI6MjA2NjIxMDExOX0.vOTrEVYX30FpWPQykY5CF1QCfkyG5gDLnI_2N9TATRE';
@@ -113,9 +112,9 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            toast.className = `toast`;
             toast.textContent = message;
-            toast.style.cssText = 'padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.3);';
+            toast.style.cssText = 'padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: fadeIn 0.5s forwards;';
             toast.style.backgroundColor = type === 'error' ? '#d9534f' : (type === 'info' ? '#31708f' : '#28a745');
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
@@ -182,7 +181,7 @@
                   <label>Placa</label><input type="text" name="placa" />
                   <button type="submit" class="btn-primary">Salvar Cliente</button>
                 </form>
-                <ul class="item-list">${state.clientes.map(c => `<li data-id="${c.id}"><div class="item-info">${c.nome}</div><div class="item-actions"><button title="Editar" data-action="edit" data-type="clientes">${icons.edit}</button><button title="Excluir" data-action="delete" data-type="clientes">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum cliente.</li>`}</ul>`;
+                <ul class="item-list">${state.clientes.map(c => `<li data-id="${c.id}"><div class="item-info">${c.nome || 'Sem nome'}</div><div class="item-actions"><button title="Editar" data-action="edit" data-type="clientes">${icons.edit}</button><button title="Excluir" data-action="delete" data-type="clientes">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum cliente.</li>`}</ul>`;
         }
         
         function renderServicosTab() {
@@ -194,7 +193,7 @@
                   <label>Valor (R$)</label><input type="number" step="0.01" name="valor" required />
                   <button type="submit" class="btn-primary">Salvar Serviço</button>
                 </form>
-                <ul class="item-list">${state.servicos.map(s => `<li data-id="${s.id}"><div class="item-info">${s.descricao} - R$ ${s.valor}</div><div class="item-actions"><button title="Editar" data-action="edit" data-type="servicos">${icons.edit}</button><button title="Excluir" data-action="delete" data-type="servicos">${icons.delete}</button></div></li>`).join('') || `<li>Nenhum serviço.</li>`}</ul>`;
+                <ul class="item-list">${state.servicos.map(s => `<li data-id="${s.id}"><div class="item-info">${s.descricao} - R$ ${s.valor}</div><div class="item-actions"><button title="Editar" data-action="edit" data-type="servicos">${icons.edit}</button><button title="Excluir" data-action="delete" data-type="servicos">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum serviço.</li>`}</ul>`;
         }
         
         function renderOrcamentosTab() {
@@ -224,7 +223,8 @@
             container.innerHTML = `<h3>Histórico de Orçamentos</h3>
                 <ul id="lista-historico" class="item-list">${state.orcamentos.map(o => {
                     const statusClass = `status-${o.status.replace(/\s+/g, '-')}`;
-                    return o.clientes ? `<li data-id="${o.id}"><div class="item-info"><strong>${o.clientes.nome}</strong> - R$ ${o.valor_total.toFixed(2)}</div><span class="status-badge ${statusClass}">${o.status}</span></li>` : ''
+                    const nomeCliente = o.clientes ? o.clientes.nome : 'Cliente excluído';
+                    return `<li data-id="${o.id}"><div class="item-info"><strong>${nomeCliente}</strong> - R$ ${o.valor_total.toFixed(2)}</div><span class="status-badge ${statusClass}">${o.status}</span></li>`
                 }).join('') || `<li style="justify-content:center;">Nenhum orçamento.</li>`}</ul>
                 <div id="historico-details" class="card hidden">
                   <pre id="historico-texto"></pre>
@@ -239,8 +239,7 @@
             const form = e.target;
             const button = form.querySelector('button[type=submit]');
             const originalText = button.textContent;
-            button.disabled = true;
-            button.textContent = "SALVANDO...";
+            button.disabled = true; button.textContent = "SALVANDO...";
             
             const tableName = form.id.split('-')[1] + 's';
             const idField = form.querySelector('input[type=hidden]');
@@ -252,11 +251,9 @@
 
             const { error } = id ? await supabase.from(tableName).update(data).eq('id', id) : await supabase.from(tableName).insert(data);
             
-            button.disabled = false;
-            button.textContent = originalText;
-            if (error) {
-                showToast(`Erro: ${error.message}`, 'error');
-            } else {
+            button.disabled = false; button.textContent = originalText;
+            if (error) { showToast(`Erro: ${error.message}`, 'error'); }
+            else {
                 showToast(`${tableName.slice(0, -1)} salvo!`, 'success');
                 form.reset();
                 if (idField) idField.value = '';
@@ -270,20 +267,15 @@
             const button = form.querySelector('button[type=submit]');
             const originalText = button.textContent;
 
-            if (state.servicosNoOrcamento.length === 0) {
-                showToast('Adicione pelo menos um serviço.', 'error');
-                return;
-            }
+            if (state.servicosNoOrcamento.length === 0) { showToast('Adicione pelo menos um serviço.', 'error'); return; }
             
-            button.disabled = true;
-            button.textContent = "SALVANDO...";
+            button.disabled = true; button.textContent = "SALVANDO...";
             
             const formData = new FormData(form);
             const cliente_id = parseInt(formData.get('cliente_id'));
             if (!cliente_id) {
                 showToast('Selecione um cliente.', 'error');
-                button.disabled = false;
-                button.textContent = originalText;
+                button.disabled = false; button.textContent = originalText;
                 return;
             }
             const desconto = parseFloat(formData.get('desconto')) || 0;
@@ -302,13 +294,7 @@
                 return;
             }
 
-            const itensParaInserir = state.servicosNoOrcamento.map(s => ({
-                orcamento_id: orcamento.id,
-                servico_id: s.id,
-                valor_cobrado: s.valor,
-                descricao_servico: s.descricao
-            }));
-            
+            const itensParaInserir = state.servicosNoOrcamento.map(s => ({ orcamento_id: orcamento.id, servico_id: s.id, valor_cobrado: s.valor, descricao_servico: s.descricao }));
             const { error: itensError } = await supabase.from('orcamento_itens').insert(itensParaInserir);
 
             if (itensError) {
@@ -342,14 +328,10 @@
         function renderHistoricoDetails() {
             const orc = state.orcamentoAtual;
             const detailsDiv = document.getElementById('historico-details');
-            if(!orc || !orc.clientes || !orc.orcamento_itens) {
-                detailsDiv.classList.add('hidden');
-                return;
-            }
+            if(!orc || !orc.clientes || !orc.orcamento_itens) { detailsDiv.classList.add('hidden'); return; }
             
             const servicosListados = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (R$ ${parseFloat(item.valor_cobrado).toFixed(2)})`).join('\n');
             const subTotal = orc.orcamento_itens.reduce((acc, item) => acc + parseFloat(item.valor_cobrado), 0);
-
             const textoOrcamento = `Orçamento R.M. Estética Automotiva\n==================================\nData: ${new Date(orc.created_at).toLocaleString('pt-BR')}\nCliente: ${orc.clientes.nome}\nTelefone: ${orc.clientes.telefone || '-'}\n\nSERVIÇOS:\n${servicosListados}\n\nSubtotal: R$ ${subTotal.toFixed(2)}\nDesconto: ${orc.desconto}%\nVALOR TOTAL: R$ ${orc.valor_total.toFixed(2)}\n\nFormas de Pagamento: ${orc.formas_pagamento || 'N/A'}`;
             const textoRecibo = `RECIBO DE SERVIÇO (NÃO FISCAL)\n==================================\nData da Finalização: ${new Date().toLocaleDateString('pt-BR')}\nCliente: ${orc.clientes.nome}\n\nServiço(s) Realizado(s):\n${servicosListados}\n\nValor Pago: R$ ${orc.valor_total.toFixed(2)}`;
             
@@ -357,7 +339,6 @@
             detailsDiv.classList.remove('hidden');
 
             document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamento, 10, 10).save(`orcamento_${orc.clientes.nome}.pdf`);
-            document.getElementById('btn-enviar-orcamento-whatsapp').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(textoOrcamento)}`);
             document.getElementById('btn-gerar-recibo-pdf').onclick = () => new jsPDF().text(textoRecibo, 10, 10).save(`recibo_${orc.clientes.nome}.pdf`);
             document.getElementById('btn-delete-orcamento').onclick = () => handleDelete(orc.id, 'orcamento');
 
@@ -400,7 +381,7 @@
         
         function showTab(tabName) {
             mainContainer.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            nav.querySelectorAll('button[data-tab]').forEach(b => b.classList.remove('active'));
             
             const activeContent = document.getElementById(tabName);
             if(activeContent) activeContent.classList.add('active');
@@ -411,22 +392,25 @@
             localStorage.setItem('activeTab', tabName);
         }
         
-        // --- INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS ---
         nav.addEventListener('click', e => {
             const target = e.target.closest('button');
             if (target && target.dataset.tab) {
                 showTab(target.dataset.tab);
             }
         });
-        
+
         document.getElementById('sync-button').addEventListener('click', () => {
             showToast('Sincronizando...', 'info');
             loadAllData();
         });
         
         mainContainer.addEventListener('submit', e => {
-            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') handleFormSubmit(e);
-            if(e.target.id === 'form-orcamento') handleOrcamentoSubmit(e);
+            e.preventDefault();
+            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') {
+                handleFormSubmit(e);
+            } else if (e.target.id === 'form-orcamento') {
+                handleOrcamentoSubmit(e);
+            }
         });
 
         mainContainer.addEventListener('click', e => {
@@ -462,10 +446,16 @@
             }
         });
         
-        // Listener separado para o formulário de orçamentos para evitar conflitos
-        const orcamentoTab = document.getElementById('orcamentos');
-        orcamentoTab.addEventListener('click', e => {
-             if (e.target.id === 'btn-add-servico') {
+        mainContainer.addEventListener('input', e => {
+            const formOrcamento = document.getElementById('form-orcamento');
+             if (formOrcamento && formOrcamento.contains(e.target) && e.target.name === 'desconto') {
+                calcularTotalOrcamento();
+             }
+        });
+
+        mainContainer.addEventListener('click', e => {
+            const addServicoBtn = document.getElementById('btn-add-servico');
+            if (addServicoBtn && addServicoBtn.contains(e.target)) {
                 const select = document.getElementById('servico-para-adicionar');
                 const servicoId = parseInt(select.value);
                 if (!servicoId || state.servicosNoOrcamento.some(s => s.id === servicoId)) return;
@@ -474,11 +464,6 @@
                 renderServicosNoOrcamento();
                 select.value = '';
             }
-        });
-        orcamentoTab.addEventListener('input', e => {
-             if (e.target.name === 'desconto') {
-                calcularTotalOrcamento();
-             }
         });
 
         const activeTab = localStorage.getItem('activeTab') || 'clientes';
