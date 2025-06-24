@@ -4,37 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>R.M. Estética Automotiva - Gestão</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-      :root {
-        --bg-primary: #121212; --bg-secondary: #1C1C1E; --bg-tertiary: #2a2a2a;
-        --accent-primary: #d32f2f; --text-primary: #e0e0e0; --text-secondary: #b0b0b0;
-        --border-color: rgba(255, 255, 255, 0.1); --border-radius: 8px;
-      }
+      :root { --bg-primary: #121212; --bg-secondary: #1E1E1E; --accent-primary: #d32f2f; --text-primary: #e0e0e0; --text-secondary: #b0b0b0; --border-color: #333; }
       * { box-sizing: border-box; }
       body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; margin: 0; }
-      header { background: var(--accent-primary); color: #fff; padding: 16px; text-align: center; font-size: 1.5rem; font-weight: 700; }
+      header { background: var(--accent-primary); color: #fff; padding: 1rem; text-align: center; font-size: 1.5rem; font-weight: 700; }
       nav { display: flex; background: #1a1a1a; justify-content: center; flex-wrap: wrap; }
-      nav button { background: transparent; color: var(--text-secondary); border: none; padding: 15px 20px; cursor: pointer; font-weight: 600; }
+      nav button { background: transparent; color: var(--text-secondary); border: none; padding: 15px 20px; cursor: pointer; font-weight: 600; flex-grow: 1; }
       nav button.active { color: #fff; background: var(--accent-primary); }
-      main { padding: 20px; max-width: 900px; margin: auto; }
+      main { padding: 1rem; max-width: 900px; margin: auto; }
       .tab-content { display: none; }
       .tab-content.active { display: block; }
-      .card { background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
-      form label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
-      form input, form select { width: 100%; padding: 12px; margin-bottom: 18px; border: 1px solid var(--border-color); background-color: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; font-size: 1rem; }
-      form button { background: var(--accent-primary); color: #fff; border: none; width: 100%; padding: 14px; cursor: pointer; font-weight: 700; font-size: 1rem; border-radius: 8px; }
-      form button:disabled { background-color: #555; cursor: not-allowed; }
-      .item-list { list-style: none; padding: 0; margin-top: 20px; }
-      .item-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-      .item-list li:last-child { border-bottom: none; }
-      .item-actions { display: flex; gap: 10px; }
-      .item-actions button { background: none; border: none; padding: 8px; cursor: pointer; color: var(--text-secondary); }
-      .item-actions svg { width: 20px; height: 20px; stroke: currentColor; pointer-events: none; }
-      .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; }
-      .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; }
+      .card { background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); }
+      form { display: flex; flex-direction: column; gap: 1rem; }
+      form label { font-weight: 600; color: var(--text-secondary); }
+      form input, form select { width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); background-color: #2a2a2a; color: var(--text-primary); border-radius: 4px; font-size: 1rem; }
+      .btn { background: var(--accent-primary); color: #fff; border: none; padding: 0.9rem; cursor: pointer; font-weight: 700; border-radius: 4px; }
+      .item-list { list-style: none; padding: 0; margin-top: 1.5rem; border-top: 1px solid var(--border-color); }
+      .item-list li { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .item-actions button { background: none; border: none; cursor: pointer; color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -43,106 +32,100 @@
 <nav>
   <button data-tab="clientes">Clientes</button>
   <button data-tab="servicos">Serviços</button>
-  <button data-tab="orcamentos">Orçamentos</button>
 </nav>
 
 <main id="main-container">
-  <section id="clientes" class="tab-content card"></section>
-  <section id="servicos" class="tab-content card" style="display:none;"></section>
-  <section id="orcamentos" class="tab-content card" style="display:none;"></section>
-</main>
+  <section id="clientes" class="tab-content card">
+    <h3>Clientes</h3>
+    <form id="form-cliente">
+      <input type="hidden" name="id">
+      <label>Nome</label><input type="text" name="nome" required>
+      <label>Telefone</label><input type="tel" name="telefone">
+      <label>Veículo</label><input type="text" name="carro">
+      <label>Placa</label><input type="text" name="placa">
+      <button type="submit" class="btn">Salvar Cliente</button>
+    </form>
+    <ul id="lista-clientes" class="item-list"><li>Carregando...</li></ul>
+  </section>
 
-<div id="toast-container"></div>
+  <section id="servicos" class="tab-content card">
+    <h3>Serviços</h3>
+    <form id="form-servico">
+      <input type="hidden" name="id">
+      <label>Descrição</label><input type="text" name="descricao" required>
+      <label>Valor (R$)</label><input type="number" step="0.01" name="valor" required>
+      <button type="submit" class="btn">Salvar Serviço</button>
+    </form>
+    <ul id="lista-servicos" class="item-list"><li>Carregando...</li></ul>
+  </section>
+</main>
 
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
     document.addEventListener('DOMContentLoaded', () => {
-
+        // --- CONFIGURAÇÃO ESSENCIAL ---
         const supabaseUrl = 'https://uymunsavnpfcsuznrugi.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        const state = { clientes: [], servicos: [] };
-        const icons = {
-            edit: `<svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
-            delete: `<svg fill="none" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+        const forms = {
+            cliente: document.getElementById('form-cliente'),
+            servico: document.getElementById('form-servico'),
         };
-        const mainContainer = document.getElementById('main-container');
 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            toast.style.backgroundColor = type === 'error' ? '#d9534f' : '#28a745';
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
+        const lists = {
+            clientes: document.getElementById('lista-clientes'),
+            servicos: document.getElementById('lista-servicos'),
+        };
 
-        async function loadAndRender() {
-            try {
-                const [clientesRes, servicosRes] = await Promise.all([
-                    supabase.from('clientes').select('*').order('nome'),
-                    supabase.from('servicos').select('*').order('descricao')
-                ]);
-                
-                if (clientesRes.error) throw clientesRes.error;
-                if (servicosRes.error) throw servicosRes.error;
+        // --- FUNÇÕES DE RENDERIZAÇÃO (DESENHAR NA TELA) ---
+        function render(tableName, data) {
+            const list = lists[tableName];
+            if (!list) return;
 
-                state.clientes = clientesRes.data || [];
-                state.servicos = servicosRes.data || [];
-                
-                renderClientes();
-                renderServicos();
-                renderOrcamentos();
-
-            } catch (error) {
-                showToast(`Erro ao carregar dados: ${error.message}`, 'error');
+            if (tableName === 'clientes') {
+                list.innerHTML = data.map(item => `
+                    <li data-id="${item.id}">
+                        <div>${item.nome}</div>
+                        <div class="item-actions">
+                            <button onclick="window.app.editItem('${tableName}', ${item.id})">✏️</button>
+                            <button onclick="window.app.deleteItem('${tableName}', ${item.id})">🗑️</button>
+                        </div>
+                    </li>`).join('') || '<li>Nenhum cliente.</li>';
+            } else if (tableName === 'servicos') {
+                list.innerHTML = data.map(item => `
+                    <li data-id="${item.id}">
+                        <div>${item.descricao} - R$ ${item.valor}</div>
+                        <div class="item-actions">
+                            <button onclick="window.app.editItem('${tableName}', ${item.id})">✏️</button>
+                            <button onclick="window.app.deleteItem('${tableName}', ${item.id})">🗑️</button>
+                        </div>
+                    </li>`).join('') || '<li>Nenhum serviço.</li>';
             }
         }
-        
-        function renderClientes() {
-            const container = document.getElementById('clientes');
-            container.innerHTML = `<h3>Clientes</h3>
-                <form id="form-cliente">
-                  <input type="hidden" name="id" />
-                  <label>Nome</label><input type="text" name="nome" required />
-                  <label>Telefone</label><input type="tel" name="telefone" />
-                  <label>Veículo</label><input type="text" name="carro" />
-                  <label>Placa</label><input type="text" name="placa" />
-                  <button type="submit" class="btn-primary">Salvar Cliente</button>
-                </form>
-                <ul class="item-list">${state.clientes.map(c => `<li data-id="${c.id}"><div class="item-info">${c.nome}</div><div class="item-actions"><button type="button" data-action="edit" data-type="clientes">${icons.edit}</button><button type="button" data-action="delete" data-type="clientes">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum cliente cadastrado.</li>`}
-                </ul>`;
-        }
-        
-        function renderServicos() {
-            const container = document.getElementById('servicos');
-            container.innerHTML = `<h3>Serviços</h3>
-                <form id="form-servico">
-                  <input type="hidden" name="id" />
-                  <label>Descrição</label><input type="text" name="descricao" required />
-                  <label>Valor (R$)</label><input type="number" step="0.01" name="valor" required />
-                  <button type="submit" class="btn-primary">Salvar Serviço</button>
-                </form>
-                <ul class="item-list">${state.servicos.map(s => `<li data-id="${s.id}"><div class="item-info">${s.descricao} - R$${s.valor.toFixed(2)}</div><div class="item-actions"><button type="button" data-action="edit" data-type="servicos">${icons.edit}</button><button type="button" data-action="delete" data-type="servicos">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum serviço cadastrado.</li>`}
-                </ul>`;
+
+        // --- CARREGAMENTO DE DADOS ---
+        async function loadAllData() {
+            try {
+                const { data: clientes, error: errClientes } = await supabase.from('clientes').select('*').order('nome');
+                if (errClientes) throw errClientes;
+                render('clientes', clientes);
+
+                const { data: servicos, error: errServicos } = await supabase.from('servicos').select('*').order('descricao');
+                if (errServicos) throw errServicos;
+                render('servicos', servicos);
+
+            } catch (error) {
+                alert(`ERRO AO CARREGAR DADOS: ${error.message}`);
+            }
         }
 
-        function renderOrcamentos() {
-            const container = document.getElementById('orcamentos');
-            container.innerHTML = `<h3>Novo Orçamento</h3>
-                <p>Funcionalidade de orçamento será adicionada em breve, após validarmos Clientes e Serviços.</p>`;
-        }
-
-        async function handleFormSubmit(form) {
+        // --- MANIPULAÇÃO DE FORMULÁRIOS ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
             const tableName = form.id.split('-')[1] + 's';
-            const button = form.querySelector('button');
-            const originalText = button.textContent;
-            button.disabled = true;
-            button.textContent = 'SALVANDO...';
-
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             const id = data.id;
@@ -151,95 +134,61 @@
             if (data.valor) data.valor = parseFloat(data.valor);
 
             const { error } = id ? await supabase.from(tableName).update(data).eq('id', id) : await supabase.from(tableName).insert(data);
-
+            
             if (error) {
-                showToast(`Erro: ${error.message}`, 'error');
+                alert(`Erro ao salvar: ${error.message}`);
             } else {
-                showToast('Salvo com sucesso!', 'success');
-                await loadAndRender();
+                form.reset();
+                await loadAllData();
             }
-            button.disabled = false;
-            button.textContent = originalText;
         }
 
-        function handleEdit(type, id) {
-            const itemData = state[type].find(item => item.id === id);
-            if (!itemData) return;
-            const form = document.getElementById(`form-${type.slice(0, -1)}`);
-            Object.keys(itemData).forEach(key => {
-                if (form[key]) form[key].value = itemData[key];
-            });
-            window.scrollTo(0,0);
-        }
+        // --- AÇÕES GLOBAIS (EDITAR/DELETAR) ---
+        window.app = {
+            editItem: async (tableName, id) => {
+                const { data, error } = await supabase.from(tableName).select('*').eq('id', id).single();
+                if (error) return alert('Erro ao buscar item para edição.');
 
-        function handleDelete(type, id) {
-            if (confirm(`Tem certeza que deseja excluir este item?`)) {
-                supabase.from(type).delete().eq('id', id).then(({ error }) => {
-                    if (error) {
-                        showToast(`Erro ao excluir: ${error.message}`, 'error');
-                    } else {
-                        showToast('Item excluído!', 'success');
-                        loadAndRender();
-                    }
+                const form = document.getElementById(`form-${tableName.slice(0,-1)}`);
+                Object.keys(data).forEach(key => {
+                    if(form[key]) form[key].value = data[key];
                 });
+                showTab(tableName);
+            },
+            deleteItem: async (tableName, id) => {
+                if (confirm('Tem certeza que deseja excluir?')) {
+                    const { error } = await supabase.from(tableName).delete().eq('id', id);
+                    if (error) {
+                        alert(`Erro ao excluir: ${error.message}`);
+                    } else {
+                        await loadAllData();
+                    }
+                }
             }
-        }
-        
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            
-            const tabElement = document.getElementById(tabName);
-            const navButton = document.querySelector(`nav button[data-tab="${tabName}"]`);
+        };
 
-            if (tabElement) tabElement.classList.add('active');
-            if (navButton) navButton.classList.add('active');
-            
+        // --- NAVEGAÇÃO POR ABAS ---
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).style.display = 'block';
+            document.querySelector(`nav button[data-tab="${tabName}"]`).classList.add('active');
             localStorage.setItem('activeTab', tabName);
         }
 
-        // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
-        
-        // Listener único para toda a área principal, cobrindo submits e clicks
-        mainContainer.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (e.target.tagName === 'FORM') {
-                handleFormSubmit(e.target);
-            }
-        });
-        
-        mainContainer.addEventListener('click', (e) => {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
-
-            const li = button.closest('li[data-id]');
-            const id = parseInt(li.dataset.id);
-            const type = button.dataset.type;
-            const action = button.dataset.action;
-
-            if (action === 'delete') {
-                handleDelete(type, id);
-            } else if (action === 'edit') {
-                handleEdit(type, id);
-            }
-        });
-
-        // Listener para a navegação
         document.querySelector('nav').addEventListener('click', e => {
-            if (e.target.dataset.tab) {
-                showTab(e.target.dataset.tab);
-            }
+            if (e.target.dataset.tab) showTab(e.target.dataset.tab);
         });
-        
-        // Carga Inicial
-        async function init() {
-            const activeTab = localStorage.getItem('activeTab') || 'clientes';
-            showTab(activeTab);
-            await loadAndRender();
-        }
 
-        init();
+        // --- INICIALIZAÇÃO ---
+        forms.cliente.addEventListener('submit', handleFormSubmit);
+        forms.servico.addEventListener('submit', handleFormSubmit);
+        
+        const activeTab = localStorage.getItem('activeTab') || 'clientes';
+        showTab(activeTab);
+        loadAllData();
     });
 </script>
+
 </body>
 </html>
