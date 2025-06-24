@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>R.M. Estética Automotiva - Gestão</title>
     
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#d32f2f">
-    <link rel="apple-touch-icon" href="./icon-192x192.png">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +23,7 @@
       header { background: var(--accent-primary); color: #fff; padding: 16px 20px; text-align: center; font-size: clamp(1.25rem, 4vw, 1.5rem); font-weight: 700; letter-spacing: 1.5px; text-shadow: 1px 1px 3px var(--shadow-color); }
       nav { display: flex; background: rgba(0,0,0,0.2); justify-content: center; align-items: center; padding: 12px; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--border-color); }
       nav button { background: transparent; color: var(--text-secondary); border: none; padding: 10px 20px; cursor: pointer; font-weight: 600; border-radius: 8px; transition: var(--transition-speed); }
-      nav button.active { color: var(--text-primary); }
+      nav button.active { color: var(--text-primary); background-color: var(--accent-primary); }
       #sync-button { margin-left: auto; padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; }
       #sync-button:hover { background-color: var(--bg-tertiary); border-color: var(--border-color); color: var(--accent-primary); }
       #sync-button svg { width: 22px; height: 22px; stroke: currentColor; transition: var(--transition-speed); }
@@ -67,7 +63,6 @@
       #orcamento-servicos-lista { border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px; padding: 0; }
       #orcamento-servicos-lista li { background: var(--bg-tertiary); }
       #orcamento-total { text-align: right; font-size: 1.2rem; font-weight: bold; margin: 20px 0; }
-      .hidden { display: none; }
       .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; }
       .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
       @media (max-width: 768px) { main { padding: 15px 10px; } nav button { padding: 10px 12px; } #sync-button { margin-left: 0; } .btn-group { grid-template-columns: 1fr; } }
@@ -95,17 +90,6 @@
 
 <div id="toast-container"></div>
 <div id="modal-confirm" class="modal-overlay" style="display:none;"><div class="modal-content"><p id="modal-text"></p><div class="modal-buttons"><button id="modal-cancel-btn">Cancelar</button><button id="modal-confirm-btn">Confirmar</button></div></div></div>
-
-<script>
-    // CAMINHO CORRIGIDO para o Service Worker funcionar no GitHub Pages
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(registration => console.log('Service Worker registrado.'))
-                .catch(error => console.error('Falha ao registrar SW:', error));
-        });
-    }
-</script>
 
 <script type="module">
     const { jsPDF } = window.jspdf;
@@ -416,7 +400,7 @@
         
         function showTab(tabName) {
             mainContainer.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            nav.querySelectorAll('button[data-tab]').forEach(b => b.classList.remove('active'));
+            nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
             
             const activeContent = document.getElementById(tabName);
             if(activeContent) activeContent.classList.add('active');
@@ -441,11 +425,8 @@
         });
         
         mainContainer.addEventListener('submit', e => {
-            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') {
-                handleFormSubmit(e);
-            } else if (e.target.id === 'form-orcamento') {
-                handleOrcamentoSubmit(e);
-            }
+            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') handleFormSubmit(e);
+            if(e.target.id === 'form-orcamento') handleOrcamentoSubmit(e);
         });
 
         mainContainer.addEventListener('click', e => {
@@ -481,8 +462,10 @@
             }
         });
         
-        document.getElementById('orcamentos')?.addEventListener('click', e => {
-            if (e.target.id === 'btn-add-servico') {
+        // Listener separado para o formulário de orçamentos para evitar conflitos
+        const orcamentoTab = document.getElementById('orcamentos');
+        orcamentoTab.addEventListener('click', e => {
+             if (e.target.id === 'btn-add-servico') {
                 const select = document.getElementById('servico-para-adicionar');
                 const servicoId = parseInt(select.value);
                 if (!servicoId || state.servicosNoOrcamento.some(s => s.id === servicoId)) return;
@@ -492,8 +475,7 @@
                 select.value = '';
             }
         });
-        
-        document.getElementById('orcamentos')?.addEventListener('input', e => {
+        orcamentoTab.addEventListener('input', e => {
              if (e.target.name === 'desconto') {
                 calcularTotalOrcamento();
              }
