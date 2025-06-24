@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>R.M. Estética Automotiva - Gestão</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#d32f2f">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -96,16 +92,6 @@
 <div id="toast-container"></div>
 <div id="modal-confirm" class="modal-overlay" style="display:none;"><div class="modal-content"><p id="modal-text"></p><div class="modal-buttons"><button id="modal-cancel-btn">Cancelar</button><button id="modal-confirm-btn">Confirmar</button></div></div></div>
 
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(registration => console.log('Service Worker registrado.'))
-                .catch(error => console.error('Falha ao registrar SW:', error));
-        });
-    }
-</script>
-
 <script type="module">
     const { jsPDF } = window.jspdf;
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -130,6 +116,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
+            toast.style.cssText = 'padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.3);';
             toast.style.backgroundColor = type === 'error' ? '#d9534f' : (type === 'info' ? '#31708f' : '#28a745');
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
@@ -170,7 +157,7 @@
                 renderAllTabs();
 
             } catch (error) {
-                showToast(`Erro Crítico ao Carregar Dados: ${error.message}`, 'error');
+                showToast(`Erro ao carregar dados: ${error.message}`, 'error');
                 console.error(error);
             } finally {
                 syncButton.classList.remove('syncing');
@@ -253,7 +240,8 @@
             const form = e.target;
             const button = form.querySelector('button[type=submit]');
             const originalText = button.textContent;
-            button.disabled = true; button.textContent = "SALVANDO...";
+            button.disabled = true;
+            button.textContent = "SALVANDO...";
             
             const tableName = form.id.split('-')[1] + 's';
             const idField = form.querySelector('input[type=hidden]');
@@ -265,9 +253,11 @@
 
             const { error } = id ? await supabase.from(tableName).update(data).eq('id', id) : await supabase.from(tableName).insert(data);
             
-            button.disabled = false; button.textContent = originalText;
-            if (error) { showToast(`Erro: ${error.message}`, 'error'); }
-            else {
+            button.disabled = false;
+            button.textContent = originalText;
+            if (error) {
+                showToast(`Erro: ${error.message}`, 'error');
+            } else {
                 showToast(`${tableName.slice(0, -1)} salvo!`, 'success');
                 form.reset();
                 if (idField) idField.value = '';
@@ -281,15 +271,20 @@
             const button = form.querySelector('button[type=submit]');
             const originalText = button.textContent;
 
-            if (state.servicosNoOrcamento.length === 0) { showToast('Adicione pelo menos um serviço.', 'error'); return; }
+            if (state.servicosNoOrcamento.length === 0) {
+                showToast('Adicione pelo menos um serviço.', 'error');
+                return;
+            }
             
-            button.disabled = true; button.textContent = "SALVANDO...";
+            button.disabled = true;
+            button.textContent = "SALVANDO...";
             
             const formData = new FormData(form);
             const cliente_id = parseInt(formData.get('cliente_id'));
             if (!cliente_id) {
                 showToast('Selecione um cliente.', 'error');
-                button.disabled = false; button.textContent = originalText;
+                button.disabled = false;
+                button.textContent = originalText;
                 return;
             }
             const desconto = parseFloat(formData.get('desconto')) || 0;
@@ -299,7 +294,8 @@
             const valor_total = subtotal * (1 - desconto / 100);
 
             const { data: orcamento, error: orcError } = await supabase.from('orcamentos')
-                .insert({ cliente_id, desconto, valor_total, formas_pagamento, status: 'Orçamento' }).select().single();
+                .insert({ cliente_id, desconto, valor_total, formas_pagamento, status: 'Orçamento' })
+                .select().single();
 
             if (orcError) {
                 showToast(`Erro ao salvar orçamento: ${orcError.message}`, 'error');
@@ -307,7 +303,13 @@
                 return;
             }
 
-            const itensParaInserir = state.servicosNoOrcamento.map(s => ({ orcamento_id: orcamento.id, servico_id: s.id, valor_cobrado: s.valor, descricao_servico: s.descricao }));
+            const itensParaInserir = state.servicosNoOrcamento.map(s => ({
+                orcamento_id: orcamento.id,
+                servico_id: s.id,
+                valor_cobrado: s.valor,
+                descricao_servico: s.descricao
+            }));
+            
             const { error: itensError } = await supabase.from('orcamento_itens').insert(itensParaInserir);
 
             if (itensError) {
@@ -342,17 +344,55 @@
         function renderHistoricoDetails() {
             const orc = state.orcamentoAtual;
             const detailsDiv = document.getElementById('historico-details');
-            if(!orc || !orc.clientes || !orc.orcamento_itens) { detailsDiv.classList.add('hidden'); return; }
+            if(!orc || !orc.clientes || !orc.orcamento_itens) {
+                detailsDiv.classList.add('hidden');
+                return;
+            }
             
             const servicosListados = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (R$ ${parseFloat(item.valor_cobrado).toFixed(2)})`).join('\n');
             const subTotal = orc.orcamento_itens.reduce((acc, item) => acc + parseFloat(item.valor_cobrado), 0);
-            const textoOrcamento = `Orçamento R.M. Estética Automotiva\n==================================\nData: ${new Date(orc.created_at).toLocaleString('pt-BR')}\nCliente: ${orc.clientes.nome}\n\nSERVIÇOS:\n${servicosListados}\n\nSubtotal: R$ ${subTotal.toFixed(2)}\nDesconto: ${orc.desconto}%\nVALOR TOTAL: R$ ${orc.valor_total.toFixed(2)}\n\nFormas de Pagamento: ${orc.formas_pagamento || 'N/A'}`;
+
+            const textoOrcamento = `
+Orçamento R.M. Estética Automotiva
+==================================
+Data: ${new Date(orc.created_at).toLocaleString('pt-BR')}
+Cliente: ${orc.clientes.nome}
+Telefone: ${orc.clientes.telefone || '-'}
+----------------------------------
+SERVIÇOS:
+${servicosListados}
+----------------------------------
+Subtotal: ............ R$ ${subTotal.toFixed(2)}
+Desconto Aplicado: ... ${orc.desconto}%
+VALOR TOTAL: ......... R$ ${orc.valor_total.toFixed(2)}
+----------------------------------
+Formas de Pagamento Aceitas:
+${orc.formas_pagamento || 'Não especificado'}
+==================================`;
+            
+            const textoRecibo = `
+RECIBO DE SERVIÇO (NÃO FISCAL)
+==================================
+Data da Finalização: ${new Date().toLocaleString('pt-BR')}
+Cliente: ${orc.clientes.nome}
+Telefone: ${orc.clientes.telefone || '-'}
+----------------------------------
+SERVIÇO(S) REALIZADO(S):
+${servicosListados}
+----------------------------------
+PAGAMENTO:
+- VALOR PAGO: .......... R$ ${orc.valor_total.toFixed(2)}
+- Forma de Pagamento: .. ${orc.formas_pagamento || 'Não especificado'}
+==================================
+   Obrigado pela preferência!
+`;
             
             document.getElementById('historico-texto').textContent = textoOrcamento;
             detailsDiv.classList.remove('hidden');
 
             document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamento, 10, 10).save('orcamento.pdf');
             document.getElementById('btn-enviar-orcamento-whatsapp').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(textoOrcamento)}`);
+            document.getElementById('btn-gerar-recibo-pdf').onclick = () => new jsPDF().text(textoRecibo, 10, 10).save('recibo.pdf');
             document.getElementById('btn-delete-orcamento').onclick = () => handleDelete(orc.id, 'orcamento');
 
             const statusControls = document.getElementById('status-controls');
@@ -371,7 +411,7 @@
 
         async function updateStatus(id, newStatus) {
             const { error } = await supabase.from('orcamentos').update({ status: newStatus }).eq('id', id);
-            if(error) { showToast(`Erro: ${error.message}`, 'error'); }
+            if(error) { showToast(`Erro ao atualizar status: ${error.message}`, 'error'); }
             else { 
                 showToast(`Status atualizado!`, 'success'); 
                 document.getElementById('historico-details').classList.add('hidden');
@@ -381,7 +421,8 @@
 
         function handleDelete(id, type) {
             showConfirmationModal(`Tem certeza que quer excluir este ${type}?`, async () => {
-                const { error } = await supabase.from(type + 's').delete().eq('id', id);
+                const tableName = type === 'orcamento' ? 'orcamentos' : type + 's';
+                const { error } = await supabase.from(tableName).delete().eq('id', id);
                 if (error) { showToast(`Erro ao excluir: ${error.message}`, 'error'); }
                 else { 
                     showToast(`${type} excluído!`, 'success'); 
@@ -396,20 +437,26 @@
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
             const tabEl = document.getElementById(tabName);
             const buttonEl = document.querySelector(`nav button[data-tab="${tabName}"]`);
-            if(tabEl) tabEl.classList.remove('hidden');
+            if(tabEl) tabEl.classList.remove('active'); // Correção: era add, deve ser remove
+            if(tabEl) tabEl.style.display = 'block'; // Usar display para mostrar
             if(buttonEl) buttonEl.classList.add('active');
             localStorage.setItem('activeTab', tabName);
         }
-
+        
         // --- INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS ---
         nav.addEventListener('click', e => {
             const target = e.target.closest('button[data-tab]');
             if (target) showTab(target.dataset.tab);
         });
 
-        document.getElementById('sync-button').addEventListener('click', loadAllData);
+        document.getElementById('sync-button').addEventListener('click', async () => {
+            showToast('Sincronizando...', 'info');
+            await loadAllData();
+            showToast('Dados atualizados!', 'success');
+        });
         
         mainContainer.addEventListener('submit', e => {
+            e.preventDefault();
             if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') handleFormSubmit(e);
             if(e.target.id === 'form-orcamento') handleOrcamentoSubmit(e);
         });
@@ -420,7 +467,7 @@
             
             const button = e.target.closest('button[data-action]');
             
-            if (button) { // Ação de editar/deletar/remover
+            if (button) {
                 e.stopPropagation();
                 const id = parseInt(li.dataset.id);
                 const type = button.dataset.type;
@@ -431,13 +478,14 @@
                 } else if (button.dataset.action === 'edit') {
                     const itemData = state[type].find(i => i.id === id);
                     const form = document.getElementById(`form-${type.slice(0, -1)}`);
+                    form.querySelector('input[type=hidden]').value = itemData.id;
                     Object.keys(itemData).forEach(key => { if(form[key]) form[key].value = itemData[key]; });
                     showTab(type);
                     window.scrollTo(0, 0);
                 } else if (button.dataset.action === 'delete') {
                     handleDelete(id, type.slice(0,-1));
                 }
-            } else if (li.parentElement.id === 'lista-historico') { // Clicou no item do histórico
+            } else if (li.parentElement.id === 'lista-historico') {
                 const orcamentoId = parseInt(li.dataset.id);
                 state.orcamentoAtual = state.orcamentos.find(o => o.id === orcamentoId);
                 document.querySelectorAll('#lista-historico li').forEach(item => item.classList.remove('selected'));
