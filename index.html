@@ -97,11 +97,10 @@
 <div id="modal-confirm" class="modal-overlay" style="display:none;"><div class="modal-content"><p id="modal-text"></p><div class="modal-buttons"><button id="modal-cancel-btn">Cancelar</button><button id="modal-confirm-btn">Confirmar</button></div></div></div>
 
 <script>
-    // Adiciona o script de registro do Service Worker para PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => console.log('Service Worker registrado com sucesso.'))
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => console.log('Service Worker registrado.'))
                 .catch(error => console.error('Falha ao registrar Service Worker:', error));
         });
     }
@@ -131,6 +130,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
+            toast.style.cssText = 'padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: fadeIn 0.5s forwards;';
             toast.style.backgroundColor = type === 'error' ? '#d9534f' : (type === 'info' ? '#31708f' : '#28a745');
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
@@ -159,7 +159,7 @@
                     supabase.from('servicos').select('*').order('descricao'),
                     supabase.from('orcamentos').select(`*, clientes(*), orcamento_itens(*, servicos(*))`).order('created_at', { ascending: false })
                 ]);
-                
+
                 state.clientes = clientesRes.status === 'fulfilled' ? clientesRes.value.data || [] : [];
                 state.servicos = servicosRes.status === 'fulfilled' ? servicosRes.value.data || [] : [];
                 state.orcamentos = orcamentosRes.status === 'fulfilled' ? orcamentosRes.value.data || [] : [];
@@ -191,7 +191,7 @@
             container.innerHTML = `<h3>Clientes</h3>
                 <form id="form-cliente">
                   <input type="hidden" name="id" />
-                  <label>Nome</label><input type="text" name="nome" required />
+                  <label>Nome do Cliente</label><input type="text" name="nome" required />
                   <label>Telefone</label><input type="tel" name="telefone" />
                   <label>Veículo</label><input type="text" name="carro" />
                   <label>Placa</label><input type="text" name="placa" />
@@ -216,7 +216,7 @@
             const container = document.getElementById('orcamentos');
             container.innerHTML = `<h3>Novo Orçamento</h3>
                 <form id="form-orcamento">
-                  <label>Cliente</label><select name="cliente_id" required><option value="">Selecione...</option>${state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}</select>
+                  <label>Cliente</label><select name="cliente_id" id="orcamento-cliente" required><option value="">Selecione...</option>${state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}</select>
                   <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 18px;">
                     <div style="flex-grow: 1;"><label>Adicionar Serviço</label><select id="servico-para-adicionar"><option value="">Selecione...</option>${state.servicos.map(s => `<option value="${s.id}" data-valor="${s.valor}">${s.descricao}</option>`).join('')}</select></div>
                     <button type="button" id="btn-add-servico" class="btn-primary" style="width: auto; padding: 12px 20px; height: 45px;">+</button>
@@ -229,7 +229,7 @@
                       <div class="checkbox-item"><input type="checkbox" name="pagamento" value="Crédito"><span>Crédito</span></div>
                       <div class="checkbox-item"><input type="checkbox" name="pagamento" value="Débito"><span>Débito</span></div>
                   </div></div>
-                  <div id="orcamento-total" style="text-align: right; font-size: 1.2rem; font-weight: bold; margin: 20px 0;">Total: R$ 0.00</div>
+                  <div id="orcamento-total">Total: R$ 0.00</div>
                   <button type="submit" class="btn-primary" style="margin-top: 20px;">Salvar Orçamento</button>
                 </form>`;
         }
@@ -252,17 +252,18 @@
         async function handleFormSubmit(e) {
             e.preventDefault();
             const form = e.target;
-            const tableName = form.id.split('-')[1] + 's';
             const button = form.querySelector('button[type=submit]');
             const originalText = button.textContent;
             button.disabled = true;
             button.textContent = "SALVANDO...";
             
+            const tableName = form.id.split('-')[1] + 's';
             const idField = form.querySelector('input[type=hidden]');
             const id = idField?.value;
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             if(idField) delete data.id;
+
             if (data.valor) data.valor = parseFloat(data.valor);
 
             const query = id ? supabase.from(tableName).update(data).eq('id', id) : supabase.from(tableName).insert(data);
@@ -367,13 +368,12 @@
             const servicosListados = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (R$ ${parseFloat(item.valor_cobrado).toFixed(2)})`).join('\n');
             const subTotal = orc.orcamento_itens.reduce((acc, item) => acc + parseFloat(item.valor_cobrado), 0);
 
-            const textoOrcamento = `Orçamento R.M. Estética Automotiva...`; // (Formato detalhado mantido)
-            const textoRecibo = `RECIBO DE SERVIÇO (CUPOM NÃO FISCAL)...`; // (Formato detalhado mantido)
+            const textoOrcamento = `Orçamento R.M. Estética Automotiva\n==================================\nData: ${new Date(orc.created_at).toLocaleString('pt-BR')}\nCliente: ${orc.clientes.nome}\nTelefone: ${orc.clientes.telefone || '-'}\n\nSERVIÇOS:\n${servicosListados}\n\nSubtotal: R$ ${subTotal.toFixed(2)}\nDesconto: ${orc.desconto}%\nVALOR TOTAL: R$ ${orc.valor_total.toFixed(2)}\n\nFormas de Pagamento: ${orc.formas_pagamento || 'N/A'}`;
             
             document.getElementById('historico-texto').textContent = textoOrcamento;
             detailsDiv.classList.remove('hidden');
 
-            document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamento, 10, 10).save('orcamento.pdf');
+            document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamento, 10, 10).save(`orcamento_${orc.clientes.nome}.pdf`);
             document.getElementById('btn-enviar-orcamento-whatsapp').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(textoOrcamento)}`);
             document.getElementById('btn-delete-orcamento').onclick = () => handleDelete(orc.id, 'orcamento');
 
@@ -414,7 +414,7 @@
         }
         
         function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            mainContainer.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabName)?.classList.remove('hidden');
             document.querySelector(`nav button[data-tab="${tabName}"]`)?.classList.add('active');
@@ -422,18 +422,23 @@
         }
 
         // --- INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS ---
-        
         nav.addEventListener('click', e => {
             const target = e.target.closest('button[data-tab]');
             if (target) showTab(target.dataset.tab);
         });
 
         document.getElementById('sync-button').addEventListener('click', loadAllData);
+        
+        mainContainer.addEventListener('submit', e => {
+            e.preventDefault();
+            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') handleFormSubmit(e);
+            if(e.target.id === 'form-orcamento') handleOrcamentoSubmit(e);
+        });
 
         mainContainer.addEventListener('click', e => {
             const button = e.target.closest('button[data-action]');
             const li = e.target.closest('li[data-id]');
-
+            
             if (li && !button && li.parentElement.id === 'lista-historico') {
                  const orcamentoId = parseInt(li.dataset.id);
                  state.orcamentoAtual = state.orcamentos.find(o => o.id === orcamentoId);
@@ -443,43 +448,25 @@
                  return;
             }
 
-            if(button && li) {
-                e.stopPropagation();
-                const id = parseInt(li.dataset.id);
-                const type = button.dataset.type;
+            if(!button || !li) return;
+            e.stopPropagation();
+            const id = parseInt(li.dataset.id);
+            const type = button.dataset.type;
+            
+            if (action === 'edit') {
                 const itemData = state[type].find(i => i.id === id);
-
-                if(button.dataset.action === 'edit') {
-                    const form = document.getElementById(`form-${type.slice(0,-1)}`);
-                    Object.keys(itemData).forEach(key => { if(form[key]) form[key].value = itemData[key]; });
-                    showTab(type);
-                    window.scrollTo(0, 0);
-                } else if (button.dataset.action === 'delete') {
-                    handleDelete(id, type.slice(0,-1));
-                } else if(button.dataset.action === 'remove-servico') {
-                    state.servicosNoOrcamento = state.servicosNoOrcamento.filter(s => s.id !== id);
-                    renderServicosNoOrcamento();
-                }
+                if(!itemData) return;
+                const form = document.getElementById(`form-${type.slice(0, -1)}`);
+                Object.keys(itemData).forEach(key => { if(form[key]) form[key].value = itemData[key]; });
+                showTab(type);
+                window.scrollTo(0, 0);
+            } else if (action === 'delete') {
+                handleDelete(id, type.slice(0, -1));
+            } else if(button.dataset.action === 'remove-servico') {
+                state.servicosNoOrcamento = state.servicosNoOrcamento.filter(s => s.id !== id);
+                renderServicosNoOrcamento();
             }
         });
-
-        mainContainer.addEventListener('submit', e => {
-            e.preventDefault();
-            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') handleFormSubmit(e);
-            if(e.target.id === 'form-orcamento') handleOrcamentoSubmit(e);
-        });
-        
-        document.getElementById('btn-add-servico')?.addEventListener('click', () => {
-            const select = document.getElementById('servico-para-adicionar');
-            const servicoId = parseInt(select.value);
-            if (!servicoId || state.servicosNoOrcamento.some(s => s.id === servicoId)) return;
-            const servico = state.servicos.find(s => s.id === servicoId);
-            state.servicosNoOrcamento.push({ ...servico });
-            renderServicosNoOrcamento();
-            select.value = '';
-        });
-        
-        document.querySelector('#form-orcamento [name="desconto"]')?.addEventListener('input', calcularTotalOrcamento);
         
         const activeTab = localStorage.getItem('activeTab') || 'clientes';
         showTab(activeTab);
