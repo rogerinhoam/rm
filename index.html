@@ -59,7 +59,7 @@
       #lista-historico li.selected { border-left: 4px solid var(--accent-primary); background-color: var(--bg-tertiary); }
       #historico-details { margin-top: 20px; animation: fadeIn 0.5s ease; }
       #historico-texto { white-space: pre-wrap; background: var(--bg-tertiary); padding: 20px; border-radius: var(--border-radius); font-family: 'SF Mono', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.6; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); margin-bottom: 20px; }
-      .btn-group { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .btn-group { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; } // ALTERADO
       .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); }
       .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: #fff; text-align: center;}
       .status-Orçamento { background-color: #5bc0de; } .status-Aprovado { background-color: #f0ad4e; } .status-Em-Andamento { background-color: #337ab7; } .status-Finalizado { background-color: #5cb85c; } .status-Cancelado { background-color: #d9534f; }
@@ -242,7 +242,12 @@
                 <div id="historico-details" class="card hidden">
                   <pre id="historico-texto"></pre>
                   <div id="status-controls" class="btn-group"></div>
-                  <div class="btn-group"><button id="btn-gerar-orcamento-pdf">PDF Orçamento</button><button id="btn-gerar-recibo-pdf">PDF Recibo</button></div>
+                  // NOVO: Adicionado botão de WhatsApp
+                  <div class="btn-group">
+                    <button id="btn-gerar-orcamento-pdf" class="btn-secondary">PDF Orçamento</button>
+                    <button id="btn-enviar-orcamento-whatsapp" class="btn-secondary">Enviar WhatsApp</button>
+                    <button id="btn-gerar-recibo-pdf" class="btn-secondary">PDF Recibo</button>
+                  </div>
                   <div style="text-align:center; margin-top:20px;"><button id="btn-delete-orcamento" style="background:none;color:var(--text-secondary);border:none;cursor:pointer;">Excluir Orçamento</button></div>
                 </div>`;
         }
@@ -268,7 +273,7 @@
             button.disabled = false;
             button.textContent = originalText;
             if (error) {
-                showToast(`Erro: ${error.message}`, 'error');
+                showToast(`Erro: ${error.message}. Verifique as permissões no Supabase.`, 'error');
             } else {
                 showToast(`${tableName.slice(0, -1)} salvo!`, 'success');
                 form.reset();
@@ -350,21 +355,32 @@
             
             const servicosListados = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (R$ ${parseFloat(item.valor_cobrado).toFixed(2)})`).join('\n');
             const subTotal = orc.orcamento_itens.reduce((acc, item) => acc + parseFloat(item.valor_cobrado), 0);
-            const textoOrcamento = `Orçamento R.M. Estética Automotiva\n==================================\nData: ${new Date(orc.created_at).toLocaleString('pt-BR')}\nCliente: ${orc.clientes.nome}\nTelefone: ${orc.clientes.telefone || '-'}\n\nSERVIÇOS:\n${servicosListados}\n\nSubtotal: R$ ${subTotal.toFixed(2)}\nDesconto: ${orc.desconto}%\nVALOR TOTAL: R$ ${orc.valor_total.toFixed(2)}\n\nFormas de Pagamento: ${orc.formas_pagamento || 'N/A'}`;
+
+            // ALTERADO: Texto do orçamento com quebras de linha para o WhatsApp
+            const textoOrcamento = `*Orçamento R.M. Estética Automotiva*\n==================================\n\n*Data:* ${new Date(orc.created_at).toLocaleString('pt-BR')}\n*Cliente:* ${orc.clientes.nome}\n*Telefone:* ${orc.clientes.telefone || '-'}\n\n*SERVIÇOS:*\n${servicosListados}\n\n*Subtotal:* R$ ${subTotal.toFixed(2)}\n*Desconto:* ${orc.desconto}%\n*VALOR TOTAL: R$ ${orc.valor_total.toFixed(2)}*\n\n*Formas de Pagamento:* ${orc.formas_pagamento || 'N/A'}`;
             const textoRecibo = `RECIBO DE SERVIÇO (NÃO FISCAL)\n==================================\nData da Finalização: ${new Date().toLocaleDateString('pt-BR')}\nCliente: ${orc.clientes.nome}\n\nServiço(s) Realizado(s):\n${servicosListados}\n\nValor Pago: R$ ${orc.valor_total.toFixed(2)}`;
             
             document.getElementById('historico-texto').textContent = textoOrcamento;
             detailsDiv.classList.remove('hidden');
 
-            document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamento, 10, 10).save('orcamento.pdf');
-            document.getElementById('btn-enviar-orcamento-whatsapp').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(textoOrcamento)}`);
-            document.getElementById('btn-gerar-recibo-pdf').onclick = () => new jsPDF().text(textoRecibo, 10, 10).save('recibo.pdf');
+            // ALTERADO: Lógica de envio para PDF e WhatsApp
+            const textoOrcamentoPdf = textoOrcamento.replace(/\*/g, ''); // Remove a formatação do WhatsApp para o PDF
+            document.getElementById('btn-gerar-orcamento-pdf').onclick = () => new jsPDF().text(textoOrcamentoPdf, 10, 10).save(`orcamento-${orc.clientes.nome}.pdf`);
+            document.getElementById('btn-enviar-orcamento-whatsapp').onclick = () => {
+                const phone = orc.clientes.telefone ? orc.clientes.telefone.replace(/\D/g, '') : '';
+                const whatsappUrl = phone 
+                    ? `https://wa.me/55${phone}?text=${encodeURIComponent(textoOrcamento)}`
+                    : `https://wa.me/?text=${encodeURIComponent(textoOrcamento)}`;
+                window.open(whatsappUrl, '_blank');
+            };
+            document.getElementById('btn-gerar-recibo-pdf').onclick = () => new jsPDF().text(textoRecibo, 10, 10).save(`recibo-${orc.clientes.nome}.pdf`);
             document.getElementById('btn-delete-orcamento').onclick = () => handleDelete(orc.id, 'orcamento');
 
             const statusControls = document.getElementById('status-controls');
             statusControls.innerHTML = '';
-            const statusActions = { 'Orçamento': 'Aprovar', 'Aprovado': 'Finalizar Serviço' };
-            const nextStatus = { 'Orçamento': 'Aprovado', 'Aprovado': 'Finalizado' };
+            // ALTERADO: Adicionado mais status
+            const statusActions = { 'Orçamento': 'Aprovar', 'Aprovado': 'Iniciar Serviço', 'Em Andamento': 'Finalizar Serviço' };
+            const nextStatus = { 'Orçamento': 'Aprovado', 'Aprovado': 'Em Andamento', 'Em Andamento': 'Finalizado' };
             
             if(statusActions[orc.status]) {
                 const btn = document.createElement('button');
@@ -399,10 +415,23 @@
         }
         
         function showTab(tabName) {
-            mainContainer.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('hidden');
+            });
             nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabName)?.classList.add('active');
-            nav.querySelector(`button[data-tab="${tabName}"]`)?.classList.add('active');
+            
+            const activeContent = document.getElementById(tabName);
+            if(activeContent) {
+                activeContent.classList.add('active');
+                activeContent.classList.remove('hidden');
+            }
+
+            const activeButton = nav.querySelector(`button[data-tab="${tabName}"]`);
+            if(activeButton) {
+                activeButton.classList.add('active');
+            }
+            
             localStorage.setItem('activeTab', tabName);
         }
         
@@ -455,25 +484,36 @@
             }
         });
         
-        const formOrcamento = document.getElementById('orcamentos');
-        formOrcamento.addEventListener('click', e => {
-            if (e.target.id === 'btn-add-servico') {
+        mainContainer.addEventListener('input', e => {
+            const formOrcamento = document.getElementById('form-orcamento');
+            if (formOrcamento.contains(e.target)) {
+                 if (e.target.name === 'desconto') {
+                    calcularTotalOrcamento();
+                 }
+            }
+        });
+
+        mainContainer.addEventListener('click', e => {
+             const formOrcamento = document.getElementById('form-orcamento');
+            if (formOrcamento.contains(e.target) && e.target.id === 'btn-add-servico') {
                 const select = document.getElementById('servico-para-adicionar');
                 const servicoId = parseInt(select.value);
-                if (!servicoId || state.servicosNoOrcamento.some(s => s.id === servicoId)) return;
+                if (!servicoId) return;
+                if (state.servicosNoOrcamento.some(s => s.id === servicoId)) {
+                    showToast('Serviço já adicionado.', 'error');
+                    return;
+                }
                 const servico = state.servicos.find(s => s.id === servicoId);
                 state.servicosNoOrcamento.push({ ...servico });
                 renderServicosNoOrcamento();
                 select.value = '';
             }
         });
-        formOrcamento.addEventListener('input', e => {
-            if (e.target.name === 'desconto') calcularTotalOrcamento();
-        });
 
         const activeTab = localStorage.getItem('activeTab') || 'clientes';
-        showTab(activeTab);
-        loadAllData();
+        loadAllData().then(() => {
+            showTab(activeTab);
+        });
     });
 </script>
 </body>
