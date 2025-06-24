@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R.M. Estética Automotiva - Gestor PRO+</title>
+    
+    <!-- Importa o cliente Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Estilos CSS -->
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-card: #2c2c2c;
+            --bg-input: #3a3a3a;
+            --text-light: #f0f0f0;
+            --text-muted: #a0a0a0;
+            --primary-red: #e53935;
+            --primary-red-dark: #c62828;
+            --green: #43a047;
+            --green-dark: #2e7d32;
+            --blue: #1e88e5;
+            --orange: #fb8c00;
+            --red-status: #d32f2f;
+            --border-color: #444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .app-container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-red);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 { color: var(--primary-red); font-size: 1.5rem; }
+
+        nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: flex-start; }
+
+        .nav-btn {
+            padding: 10px 15px;
+            background-color: var(--bg-card);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 0.9rem;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .nav-btn:hover { background-color: var(--primary-red-dark); }
+        .nav-btn.active { background-color: var(--primary-red); color: white; font-weight: bold; }
+        
+        .sync-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 1.8rem; transition: color 0.3s, transform 0.3s;
+        }
+        .sync-btn.syncing { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 800px) { .grid-layout { grid-template-columns: 1fr 2fr; } }
+        @media (min-width: 1100px) { .dashboard-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px;} }
+
+        .card { background-color: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
+        
+        .card h2 {
+            margin-top: 0; margin-bottom: 20px; color: var(--primary-red);
+            border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 1.2rem;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; }
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-container input { padding-left: 35px; }
+        .search-container::before { content: '🔎'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+        input, select {
+            width: 100%; padding: 12px; background-color: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: 6px;
+            color: var(--text-light); font-size: 1rem;
+        }
+
+        .btn {
+            display: inline-block; padding: 12px 20px; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: bold; text-transform: uppercase;
+            font-size: 0.9rem; transition: background-color 0.3s, transform 0.1s;
+            width: 100%; margin-top: 5px;
+        }
+        
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--primary-red); color: white; }
+        .btn-primary:hover { background-color: var(--primary-red-dark); }
+        .btn-secondary { background-color: #555; color: white; }
+        .btn-secondary:hover { background-color: #666; }
+        .btn-danger { background-color: var(--red-status); color: white; }
+        .btn-success { background-color: var(--green); color: white; }
+        .btn-success:hover { background-color: var(--green-dark); }
+        .btn-sm { padding: 8px 12px; font-size: 0.8rem; width: auto; }
+
+        .data-list ul { list-style: none; padding: 0; max-height: 500px; overflow-y: auto; }
+        .data-list li {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px;
+            background-color: var(--bg-input); border-bottom: 1px solid var(--border-color);
+            border-radius: 6px; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;
+        }
+        .data-list li > div:first-child { flex-grow: 1; }
+        .item-actions { display: flex; gap: 10px; flex-shrink: 0; }
+        
+        #orcamento-total { margin-top: 20px; font-size: 1.5rem; font-weight: bold; color: var(--primary-red); text-align: center; }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; }
+        
+        .historico-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 992px) { .historico-layout { grid-template-columns: 1fr 1.5fr; } .btn { width: auto; } }
+
+        #historico-lista li, #recent-activity-list li { cursor: pointer; transition: background-color 0.2s; }
+        #historico-lista li:hover, #historico-lista li.selected, #recent-activity-list li:hover { background-color: var(--primary-red-dark); }
+        .status-indicator { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; color: white; font-weight: bold; margin-right: 10px; }
+        .status-Orçamento { background-color: var(--blue); }
+        .status-Aprovado { background-color: var(--orange); }
+        .status-Finalizado { background-color: var(--green); }
+        .status-Cancelado { background-color: var(--red-status); }
+
+        .detalhe-bloco {
+            background-color: var(--bg-dark); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px; margin-top: 20px;
+        }
+        .detalhe-bloco h3 { margin-top: 0; margin-bottom: 10px; color: var(--text-muted); font-size: 1rem; }
+        .detalhe-bloco pre {
+            white-space: pre-wrap; word-wrap: break-word; color: var(--text-light);
+            font-family: 'Courier New', Courier, monospace; font-size: 0.9rem;
+            background-color: var(--bg-input); padding: 10px; border-radius: 4px;
+        }
+        .detalhe-bloco-actions { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .detalhes-status-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .stat-card { background-color: var(--bg-card); border-radius: 8px; padding: 20px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-card .icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .stat-card h3 { font-size: 1rem; color: var(--text-muted); margin-bottom: 5px; }
+        .stat-card p { font-size: 2rem; font-weight: bold; color: var(--primary-red); }
+
+        #notification {
+            position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%);
+            padding: 15px 20px; border-radius: 8px; color: white; z-index: 1000;
+            text-align: center; visibility: hidden; transition: transform 0.5s, visibility 0.5s;
+            max-width: 90%;
+        }
+        #notification.show { transform: translate(-50%, 0); visibility: visible; }
+        #notification.success { background-color: var(--green); }
+        #notification.error { background-color: var(--red-status); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7); display: none; justify-content: center;
+            align-items: center; z-index: 2000; padding: 15px;
+        }
+        .modal-content {
+            background-color: var(--bg-card); padding: 25px; border-radius: 8px;
+            text-align: center; max-width: 400px; width: 100%;
+            border: 1px solid var(--border-color);
+        }
+        .modal-content h3 { margin-bottom: 15px; color: var(--primary-red); }
+        .modal-content p { margin-bottom: 25px; }
+        .modal-actions { display: flex; justify-content: center; gap: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>🚗 R.M. Estética PRO+</h1>
+            <button class="sync-btn" id="sync-btn" title="Sincronizar Dados">🔄</button>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-tab="dashboard">Painel 📊</button>
+            <button class="nav-btn" data-tab="clientes">Clientes 👥</button>
+            <button class="nav-btn" data-tab="servicos">Serviços 🛠️</button>
+            <button class="nav-btn" data-tab="novo-orcamento">Orçamento 📝</button>
+            <button class="nav-btn" data-tab="historico">Histórico 📂</button>
+        </nav>
+
+        <main>
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="dashboard-main-grid">
+                    <div class="card">
+                        <h2>Visão Geral</h2>
+                        <div class="dashboard-grid">
+                            <div class="stat-card"><div class="icon">👥</div><h3>Total de Clientes</h3><p id="stat-clientes">0</p></div>
+                            <div class="stat-card"><div class="icon">📝</div><h3>Orçamentos Pendentes</h3><p id="stat-pendentes">0</p></div>
+                            <div class="stat-card"><div class="icon">👍</div><h3>Serviços Aprovados</h3><p id="stat-aprovados">0</p></div>
+                            <div class="stat-card"><div class="icon">✅</div><h3>Serviços Finalizados (Mês)</h3><p id="stat-finalizados-mes">0</p></div>
+                        </div>
+                    </div>
+                    <div class="card data-list">
+                        <h2>Atividade Recente ⚡</h2>
+                        <ul id="recent-activity-list"></ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="clientes-tab" class="tab-content">
+                 <div class="grid-layout">
+                    <div class="card">
+                        <h2 id="cliente-form-title">Novo Cliente 🧑‍🤝‍🧑</h2>
+                        <form id="cliente-form">
+                            <input type="hidden" id="cliente-id">
+                            <div class="form-group"><label for="cliente-nome">Nome Completo</label><input type="text" id="cliente-nome" required></div>
+                            <div class="form-group"><label for="cliente-telefone">Telefone (com DDD)</label><input type="tel" id="cliente-telefone" placeholder="(24) 99999-8888"></div>
+                            <div class="form-group"><label for="cliente-carro">Veículo</label><input type="text" id="cliente-carro"></div>
+                            <div class="form-group"><label for="cliente-placa">Placa</label><input type="text" id="cliente-placa"></div>
+                            <button type="submit" class="btn btn-primary">Salvar 💾</button>
+                            <button type="button" id="cancelar-edicao-cliente" class="btn btn-secondary" style="display: none;">Cancelar</button>
+                        </form>
+                    </div>
+                    <div class="card data-list">
+                        <h2>Clientes Cadastrados</h2>
+                        <div class="search-container"><input type="search" id="search-cliente" placeholder="Buscar cliente por nome ou placa..."></div>
+                        <ul id="clientes-lista"></ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="servicos-tab" class="tab-content">
+                 <div class="grid-layout">
+                    <div class="card">
+                        <h2 id="servico-form-title">Novo Serviço 📋</h2>
+                        <form id="servico-form">
+                            <input type="hidden" id="servico-id">
+                            <div class="form-group"><label for="servico-descricao">Descrição</label><input type="text" id="servico-descricao" required></div>
+                            <div class="form-group"><label for="servico-valor">Valor (R$)</label><input type="number" id="servico-valor" step="0.01" required></div>
+                            <button type="submit" class="btn btn-primary">Salvar 💾</button>
+                            <button type="button" id="cancelar-edicao-servico" class="btn btn-secondary" style="display: none;">Cancelar</button>
+                        </form>
+                    </div>
+                     <div class="card data-list">
+                        <h2>Serviços Cadastrados</h2>
+                        <div class="search-container"><input type="search" id="search-servico" placeholder="Buscar serviço..."></div>
+                        <ul id="servicos-lista"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="novo-orcamento-tab" class="tab-content">
+                <div class="card">
+                    <h2>Criar Novo Orçamento ✍️</h2>
+                    <form id="orcamento-form">
+                        <div class="form-group"><label for="orcamento-cliente">Cliente</label><select id="orcamento-cliente" required></select></div>
+                        <div class="form-group"><label for="orcamento-servico-select">Adicionar Serviço</label><div style="display: flex; gap: 10px;"><select id="orcamento-servico-select" style="flex-grow: 1;"></select><button type="button" id="add-servico-btn" class="btn btn-primary btn-sm" style="width: 50px;">+</button></div></div>
+                        <h3>Serviços Adicionados</h3><ul id="orcamento-servicos-adicionados" style="min-height: 50px; list-style: none; padding: 0;"></ul>
+                        <div class="form-group" style="margin-top: 20px;"><label for="orcamento-desconto">Desconto (%)</label><input type="number" id="orcamento-desconto" value="0" min="0" max="100"></div>
+                        <div class="form-group"><label>Formas de Pagamento</label><div class="checkbox-group"><label><input type="checkbox" name="pagamento" value="Pix"> Pix</label><label><input type="checkbox" name="pagamento" value="Dinheiro"> Dinheiro</label><label><input type="checkbox" name="pagamento" value="Crédito"> Crédito</label><label><input type="checkbox" name="pagamento" value="Débito"> Débito</label></div></div>
+                        <div id="orcamento-total">TOTAL: R$ 0,00</div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Salvar Orçamento 💾</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="historico-tab" class="tab-content">
+                <div class="historico-layout">
+                    <div class="card data-list">
+                        <h2>Histórico de Serviços</h2>
+                        <div class="search-container"><input type="search" id="search-historico" placeholder="Buscar por cliente..."></div>
+                        <ul id="historico-lista"></ul>
+                    </div>
+                    <div class="card" id="detalhes-orcamento-container" style="display: none;">
+                        <h2>Detalhes do Serviço 🔎</h2>
+                        
+                        <div class="detalhes-status-actions">
+                             <button id="btn-aprovar" class="btn btn-sm" style="background-color: var(--orange)">Aprovar 👍</button>
+                             <button id="btn-finalizar" class="btn btn-sm" style="background-color: var(--green)">Finalizar ✅</button>
+                             <button id="btn-cancelar" class="btn btn-sm" style="background-color: var(--red-status);">Cancelar 👎</button>
+                             <button id="btn-excluir-orcamento" class="btn btn-sm btn-danger">Excluir 🗑️</button>
+                        </div>
+                        
+                        <div id="detalhe-orcamento-bloco" class="detalhe-bloco">
+                           <h3>Orçamento</h3>
+                           <pre id="detalhes-orcamento-texto"></pre>
+                           <div class="detalhe-bloco-actions">
+                               <button id="btn-copiar-orcamento" class="btn btn-sm btn-secondary">Copiar 📋</button>
+                               <button id="btn-whatsapp-orcamento" class="btn btn-sm btn-success">WhatsApp 💬</button>
+                           </div>
+                        </div>
+
+                        <div id="detalhe-recibo-bloco" class="detalhe-bloco" style="display: none;">
+                            <h3>Recibo de Serviço</h3>
+                            <pre id="detalhes-recibo-texto"></pre>
+                            <div class="detalhe-bloco-actions">
+                                <button id="btn-copiar-recibo" class="btn btn-sm btn-secondary">Copiar 📋</button>
+                                <button id="btn-whatsapp-recibo" class="btn btn-sm btn-success">WhatsApp 💬</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="notification"></div>
+    
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title">Confirmar Ação</h3>
+            <p id="modal-message">Você tem certeza?</p>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-confirm-btn" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ===================================================================================
+        // DADOS DO ESTABELECIMENTO
+        // ===================================================================================
+        const ESTABELECIMENTO = {
+            nome: "R.M. Estética Automotiva",
+            telefone: "(24) 99948-6232",
+            endereco: "Rua 40, TV - Recanto dos Pássaros, Pq. Mambucaba, Angra dos Reis - RJ",
+            agradecimento: "Obrigado pela preferência e volte sempre! 👍"
+        };
+
+        // ===================================================================================
+        // CONFIGURAÇÃO DO SUPABASE
+        // ===================================================================================
+        const SUPABASE_URL = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
+        
+        if (!SUPABASE_URL || !SUPABASE_KEY) {
+            document.body.innerHTML = `<div style="padding: 40px; text-align: center; font-size: 1.2rem; color: #ffcc00; background-color: #333; height: 100vh;"><h1>Erro de Configuração</h1><p>As credenciais do Supabase não foram encontradas.</p></div>`;
+            throw new Error("Credenciais do Supabase não configuradas.");
+        }
+
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ===================================================================================
+        // INÍCIO DA LÓGICA DA APLICAÇÃO
+        // ===================================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Armazenamento de Estado ---
+            let state = {
+                clientes: [], servicos: [], orcamentos: [],
+                editandoClienteId: null, editandoServicoId: null,
+                novoOrcamentoItens: [], orcamentoSelecionado: null,
+                isSyncing: false
+            };
+
+            // --- Seletores de DOM ---
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const syncBtn = $('#sync-btn'), notification = $('#notification');
+            const clienteForm = $('#cliente-form'), clientesLista = $('#clientes-lista'), searchClienteInput = $('#search-cliente'), clienteTelefoneInput = $('#cliente-telefone');
+            const servicoForm = $('#servico-form'), servicosLista = $('#servicos-lista'), searchServicoInput = $('#search-servico');
+            const orcamentoForm = $('#orcamento-form'), orcamentoClienteSelect = $('#orcamento-cliente'), orcamentoServicoSelect = $('#orcamento-servico-select'), addServicoBtn = $('#add-servico-btn'), orcamentoServicosAdicionados = $('#orcamento-servicos-adicionados'), orcamentoDescontoInput = $('#orcamento-desconto'), orcamentoTotalDiv = $('#orcamento-total');
+            const historicoLista = $('#historico-lista'), searchHistoricoInput = $('#search-historico'), detalhesContainer = $('#detalhes-orcamento-container'), recentActivityList = $('#recent-activity-list');
+            const confirmModal = $('#confirm-modal'), modalConfirmBtn = $('#modal-confirm-btn'), modalCancelBtn = $('#modal-cancel-btn');
+            let onConfirmCallback = null;
+
+            // --- Funções Utilitárias ---
+            const showNotification = (message, type = 'success') => { notification.textContent = message; notification.className = `show ${type}`; setTimeout(() => notification.className = notification.className.replace('show', ''), 3000); };
+            const showTab = (tabId) => { $$('.tab-content').forEach(t => t.classList.remove('active')); $$('.nav-btn').forEach(b => b.classList.remove('active')); $(`#${tabId}-tab`).classList.add('active'); $(`.nav-btn[data-tab="${tabId}"]`).classList.add('active'); };
+            const formatCurrency = (v) => v ? parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+            const formatDateTime = (d) => d ? new Date(d).toLocaleString('pt-BR') : 'N/A';
+            const showConfirmModal = (title, message, callback) => { $('#modal-title').textContent = title; $('#modal-message').textContent = message; onConfirmCallback = callback; confirmModal.style.display = 'flex'; };
+            const hideConfirmModal = () => { confirmModal.style.display = 'none'; onConfirmCallback = null; };
+            const formatPhone = (value) => { if (!value) return ""; value = value.replace(/\D/g, '').slice(0, 11); if (value.length > 6) value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'); else if (value.length > 2) value = value.replace(/(\d{2})(\d+)/, '($1) $2'); return value; };
+
+            // --- Lógica de Dados (Fetch & Render) ---
+            const fetchAllData = async () => {
+                if (state.isSyncing) return;
+                state.isSyncing = true;
+                syncBtn.classList.add('syncing');
+                showNotification('Sincronizando dados...', 'success');
+                try {
+                    const orcamentosQuery = `id, created_at, updated_at, valor_total, status, clientes ( nome, carro )`;
+                    
+                    const [clientesRes, servicosRes, orcamentosRes] = await Promise.all([
+                        db.from('clientes').select('*').order('nome', { ascending: true }),
+                        db.from('servicos').select('*').order('descricao', { ascending: true }),
+                        db.from('orcamentos').select(orcamentosQuery).order('created_at', { ascending: false })
+                    ]);
+                    if (clientesRes.error) throw new Error(`Clientes: ${clientesRes.error.message}`);
+                    if (servicosRes.error) throw new Error(`Serviços: ${servicosRes.error.message}`);
+                    if (orcamentosRes.error) throw new Error(`Orçamentos: ${orcamentosRes.error.message}`);
+                    
+                    state.clientes = clientesRes.data;
+                    state.servicos = servicosRes.data;
+                    state.orcamentos = orcamentosRes.data;
+                    renderAll();
+                } catch (error) {
+                    showNotification(`Falha ao sincronizar: ${error.message}`, 'error');
+                } finally {
+                    state.isSyncing = false;
+                    syncBtn.classList.remove('syncing');
+                }
+            };
+            const renderAll = () => { renderClientes(); renderServicos(); renderOrcamentos(); renderOrcamentoClienteOptions(); renderOrcamentoServicoOptions(); updateDashboard(); renderRecentActivity(); };
+
+            // --- Dashboard ---
+            const updateDashboard = () => {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                $('#stat-clientes').textContent = state.clientes.length;
+                $('#stat-pendentes').textContent = state.orcamentos.filter(o => o.status === 'Orçamento').length;
+                $('#stat-aprovados').textContent = state.orcamentos.filter(o => o.status === 'Aprovado').length;
+                $('#stat-finalizados-mes').textContent = state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at) >= startOfMonth).length;
+            };
+
+            const renderRecentActivity = () => {
+                const recentOrcamentos = state.orcamentos.slice(0, 5);
+                if (recentOrcamentos.length === 0) {
+                    recentActivityList.innerHTML = '<li>Nenhuma atividade registrada ainda.</li>';
+                    return;
+                }
+                recentActivityList.innerHTML = recentOrcamentos.map(orc => {
+                    const cliente = orc.clientes;
+                    if (!cliente) return ''; 
+                    const dataSimples = new Date(orc.created_at).toLocaleDateString('pt-BR');
+                    return `
+                        <li data-id="${orc.id}">
+                            <div>
+                                <strong>${cliente.nome}</strong><br>
+                                <small style="color: var(--text-muted);">🚗 ${cliente.carro || 'Veículo não informado'}</small>
+                            </div>
+                            <small>${dataSimples}</small>
+                        </li>
+                    `;
+                }).join('');
+            };
+
+            // --- Clientes ---
+            const renderClientes = () => {
+                const searchTerm = searchClienteInput.value.toLowerCase();
+                const filtered = state.clientes.filter(c => c.nome.toLowerCase().includes(searchTerm) || (c.placa && c.placa.toLowerCase().includes(searchTerm)));
+                clientesLista.innerHTML = filtered.map(c => `<li><div><strong>${c.nome}</strong><br><small>🚗 ${c.carro || 'N/D'} | 牌 ${c.placa || 'N/D'}</small></div><div class="item-actions"><button class="btn btn-sm btn-secondary edit-cliente-btn" data-id="${c.id}">Editar</button><button class="btn btn-sm btn-danger delete-cliente-btn" data-id="${c.id}">🗑️</button></div></li>`).join('');
+                if (filtered.length === 0) clientesLista.innerHTML = '<li>Nenhum cliente encontrado.</li>';
+            };
+            const handleClienteSubmit = async (e) => { e.preventDefault(); const data = { nome: $('#cliente-nome').value, telefone: $('#cliente-telefone').value, carro: $('#cliente-carro').value, placa: $('#cliente-placa').value }; const { error } = state.editandoClienteId ? await db.from('clientes').update(data).eq('id', state.editandoClienteId) : await db.from('clientes').insert(data); if (error) return showNotification('Erro ao salvar cliente.', 'error'); showNotification(`Cliente ${state.editandoClienteId ? 'atualizado' : 'cadastrado'}!`); resetClienteForm(); fetchAllData(); };
+            const handleEditCliente = (id) => { const c = state.clientes.find(cl => cl.id == id); if(!c) return; state.editandoClienteId = id; $('#cliente-form-title').textContent = 'Editar Cliente'; $('#cliente-nome').value = c.nome; $('#cliente-telefone').value = c.telefone; $('#cliente-carro').value = c.carro; $('#cliente-placa').value = c.placa; $('#cancelar-edicao-cliente').style.display = 'block'; window.scrollTo(0,0); };
+            const handleDeleteCliente = (id) => showConfirmModal('Excluir Cliente', 'Esta ação é irreversível e irá apagar também todos os orçamentos deste cliente. Deseja continuar?', async () => { const { error } = await db.from('clientes').delete().eq('id', id); if (error) showNotification(`Erro ao excluir cliente: ${error.message}`, 'error'); else { showNotification('Cliente excluído.'); fetchAllData(); } hideConfirmModal(); });
+            const resetClienteForm = () => { state.editandoClienteId = null; clienteForm.reset(); $('#cliente-form-title').textContent = 'Novo Cliente 🧑‍🤝‍🧑'; $('#cancelar-edicao-cliente').style.display = 'none'; };
+            
+            // --- Serviços ---
+            const renderServicos = () => {
+                const searchTerm = searchServicoInput.value.toLowerCase();
+                const filtered = state.servicos.filter(s => s.descricao.toLowerCase().includes(searchTerm));
+                servicosLista.innerHTML = filtered.map(s => `<li><div><strong>${s.descricao}</strong><br><small>${formatCurrency(s.valor)}</small></div><div class="item-actions"><button class="btn btn-sm btn-secondary edit-servico-btn" data-id="${s.id}">Editar</button><button class="btn btn-sm btn-danger delete-servico-btn" data-id="${s.id}">🗑️</button></div></li>`).join('');
+                if (filtered.length === 0) servicosLista.innerHTML = '<li>Nenhum serviço encontrado.</li>';
+            };
+            const handleServicoSubmit = async (e) => { e.preventDefault(); const data = { descricao: $('#servico-descricao').value, valor: $('#servico-valor').value }; const { error } = state.editandoServicoId ? await db.from('servicos').update(data).eq('id', state.editandoServicoId) : await db.from('servicos').insert(data); if (error) return showNotification('Erro ao salvar serviço.', 'error'); showNotification(`Serviço ${state.editandoServicoId ? 'atualizado' : 'cadastrado'}!`); resetServicoForm(); fetchAllData(); };
+            const handleEditServico = (id) => { const s = state.servicos.find(sv => sv.id == id); if (!s) return; state.editandoServicoId = id; $('#servico-form-title').textContent = 'Editar Serviço'; $('#servico-descricao').value = s.descricao; $('#servico-valor').value = s.valor; $('#cancelar-edicao-servico').style.display = 'block'; window.scrollTo(0,0); };
+            const handleDeleteServico = (id) => showConfirmModal('Excluir Serviço', 'Este serviço será removido. Confirma?', async () => { const { error } = await db.from('servicos').delete().eq('id', id); if (error) showNotification('Erro ao excluir serviço.', 'error'); else { showNotification('Serviço excluído.'); fetchAllData(); } hideConfirmModal(); });
+            const resetServicoForm = () => { state.editandoServicoId = null; servicoForm.reset(); $('#servico-form-title').textContent = 'Novo Serviço 📋'; $('#cancelar-edicao-servico').style.display = 'none'; };
+
+            // --- Novo Orçamento ---
+            const renderOrcamentoClienteOptions = () => { orcamentoClienteSelect.innerHTML = '<option value="">Selecione...</option>' + state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join(''); };
+            const renderOrcamentoServicoOptions = () => { orcamentoServicoSelect.innerHTML = '<option value="">Selecione...</option>' + state.servicos.map(s => `<option value="${s.id}">${s.descricao} (${formatCurrency(s.valor)})</option>`).join(''); };
+            const handleAddServicoToOrcamento = () => { const id = orcamentoServicoSelect.value; if (!id) return; const s = state.servicos.find(sv => sv.id == id); if(!s) return; if(state.novoOrcamentoItens.some(i => i.servico_id == s.id)) return showNotification('Serviço já adicionado.', 'error'); state.novoOrcamentoItens.push({ servico_id: s.id, descricao_servico: s.descricao, valor_cobrado: s.valor }); renderNovoOrcamentoItens(); updateOrcamentoTotal(); orcamentoServicoSelect.value = ''; };
+            const renderNovoOrcamentoItens = () => { orcamentoServicosAdicionados.innerHTML = state.novoOrcamentoItens.map((item, index) => `<li class="data-list"><span>${item.descricao_servico} - ${formatCurrency(item.valor_cobrado)}</span><button type="button" class="btn btn-sm btn-danger remove-servico-btn" data-index="${index}">x</button></li>`).join(''); };
+            const handleRemoveServicoFromOrcamento = (index) => { state.novoOrcamentoItens.splice(index, 1); renderNovoOrcamentoItens(); updateOrcamentoTotal(); };
+            const updateOrcamentoTotal = () => { const sub = state.novoOrcamentoItens.reduce((a, i) => a + parseFloat(i.valor_cobrado), 0); const desc = parseFloat(orcamentoDescontoInput.value) || 0; orcamentoTotalDiv.textContent = `TOTAL: ${formatCurrency(sub * (1 - desc / 100))}`; };
+            const handleOrcamentoSubmit = async (e) => { e.preventDefault(); if (state.novoOrcamentoItens.length === 0 || !orcamentoClienteSelect.value) return showNotification('Cliente e ao menos um serviço são obrigatórios.', 'error'); const sub = state.novoOrcamentoItens.reduce((a, i) => a + parseFloat(i.valor_cobrado), 0); const desc = parseFloat(orcamentoDescontoInput.value) || 0; const total = sub * (1 - desc / 100); const fpg = Array.from($$('input[name="pagamento"]:checked')).map(cb => cb.value).join(', '); const { data, error } = await db.from('orcamentos').insert({ cliente_id: orcamentoClienteSelect.value, desconto: desc, valor_total: total, status: 'Orçamento', formas_pagamento: fpg }).select().single(); if (error) return showNotification(`Erro ao salvar orçamento: ${error.message}`, 'error'); const itens = state.novoOrcamentoItens.map(i => ({ ...i, orcamento_id: data.id })); const { error: iError } = await db.from('orcamento_itens').insert(itens); if (iError) { showNotification(`Erro ao salvar itens: ${iError.message}`, 'error'); await db.from('orcamentos').delete().eq('id', data.id); return; } showNotification('Orçamento salvo com sucesso!'); resetOrcamentoForm(); fetchAllData(); showTab('historico'); };
+            const resetOrcamentoForm = () => { orcamentoForm.reset(); state.novoOrcamentoItens = []; renderNovoOrcamentoItens(); updateOrcamentoTotal(); };
+            
+            // --- Histórico ---
+            const renderOrcamentos = () => {
+                const searchTerm = searchHistoricoInput.value.toLowerCase();
+                const filtered = state.orcamentos.filter(o => o.clientes?.nome && o.clientes.nome.toLowerCase().includes(searchTerm));
+                historicoLista.innerHTML = filtered.map(o => `<li data-id="${o.id}"><div><strong>${o.clientes?.nome || 'Cliente Removido'}</strong><br><small>${formatDateTime(o.created_at)}</small></div><div><span class="status-indicator status-${o.status}">${o.status}</span><strong>${formatCurrency(o.valor_total)}</strong></div></li>`).join('');
+                if (filtered.length === 0) historicoLista.innerHTML = '<li>Nenhum orçamento encontrado.</li>';
+            };
+            const handleHistoricoClick = async (id) => { $$('#historico-lista li').forEach(li => li.classList.remove('selected')); $(`#historico-lista li[data-id="${id}"]`)?.classList.add('selected'); const { data, error } = await db.from('orcamentos').select(`*, clientes (*), orcamento_itens (*)`).eq('id', id).single(); if (error) return showNotification('Erro ao buscar detalhes.', 'error'); state.orcamentoSelecionado = data; displayOrcamentoDetails(); };
+            const displayOrcamentoDetails = () => {
+                if (!state.orcamentoSelecionado) { detalhesContainer.style.display = 'none'; return; }
+                const { status } = state.orcamentoSelecionado;
+                $('#detalhes-orcamento-texto').textContent = generateOrcamentoText(state.orcamentoSelecionado);
+                $('#btn-aprovar').style.display = status === 'Orçamento' ? 'inline-block' : 'none';
+                $('#btn-finalizar').style.display = status === 'Aprovado' ? 'inline-block' : 'none';
+                $('#btn-cancelar').style.display = status === 'Orçamento' || status === 'Aprovado' ? 'inline-block' : 'none';
+                if (status === 'Finalizado') { $('#detalhes-recibo-texto').textContent = generateReciboText(state.orcamentoSelecionado); $('#detalhe-recibo-bloco').style.display = 'block'; }
+                else { $('#detalhe-recibo-bloco').style.display = 'none'; }
+                detalhesContainer.style.display = 'block';
+            };
+            const updateStatusOrcamento = async (newStatus) => { if (!state.orcamentoSelecionado) return; const { error } = await db.from('orcamentos').update({ status: newStatus, updated_at: new Date() }).eq('id', state.orcamentoSelecionado.id); if (error) showNotification('Erro ao atualizar status.', 'error'); else { showNotification(`Orçamento ${newStatus.toLowerCase()}!`); state.orcamentoSelecionado.status = newStatus; displayOrcamentoDetails(); fetchAllData(); } };
+            const handleDeleteOrcamento = () => showConfirmModal('Excluir Orçamento', 'Esta ação é irreversível. O orçamento será permanentemente removido.', async () => { if (!state.orcamentoSelecionado) return; const { error } = await db.from('orcamentos').delete().eq('id', state.orcamentoSelecionado.id); if (error) showNotification(`Erro ao excluir orçamento: ${error.message}`, 'error'); else { showNotification('Orçamento excluído.'); state.orcamentoSelecionado = null; displayOrcamentoDetails(); fetchAllData(); } hideConfirmModal(); });
+            
+            // --- Geração de Texto ---
+            const generateFooter = () => `\n==================================\n*${ESTABELECIMENTO.nome}*\n📍 ${ESTABELECIMENTO.endereco}\n*📞 Contato:* ${ESTABELECIMENTO.telefone}\n\n_${ESTABELECIMENTO.agradecimento}_`;
+            const generateOrcamentoText = (orc) => { const subtotal = orc.orcamento_itens.reduce((acc, item) => acc + parseFloat(item.valor_cobrado), 0); const servicosText = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (${formatCurrency(item.valor_cobrado)})`).join('\n'); return `*Orçamento - ${ESTABELECIMENTO.nome}*\n==================================\n*Data:* ${formatDateTime(orc.created_at)}\n*Cliente:* ${orc.clientes?.nome || 'N/A'}\n\n*SERVIÇOS:*\n${servicosText}\n\n*Subtotal:* ${formatCurrency(subtotal)}\n*Desconto:* ${orc.desconto}%\n*VALOR TOTAL:* ${formatCurrency(orc.valor_total)}\n\n*Formas de Pagamento:* ${orc.formas_pagamento || 'Não especificado'}` + generateFooter(); };
+            const generateReciboText = (orc) => { const servicosText = orc.orcamento_itens.map(item => `- ${item.descricao_servico}`).join('\n'); return `*Recibo de Serviço (Não Fiscal)*\n==================================\n*Data da Finalização:* ${formatDateTime(orc.updated_at)}\n*Cliente:* ${orc.clientes?.nome || 'N/A'}\n\n*Serviço(s) Realizado(s):*\n${servicosText}\n\n*Valor Pago:* ${formatCurrency(orc.valor_total)}` + generateFooter(); };
+
+            // --- Inicialização e Event Listeners ---
+            const init = () => {
+                $$('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+                syncBtn.addEventListener('click', fetchAllData);
+                clienteForm.addEventListener('submit', handleClienteSubmit);
+                $('#cancelar-edicao-cliente').addEventListener('click', resetClienteForm);
+                clientesLista.addEventListener('click', (e) => { const id = e.target.closest('[data-id]')?.dataset.id; if (!id) return; if (e.target.closest('.edit-cliente-btn')) handleEditCliente(id); if (e.target.closest('.delete-cliente-btn')) handleDeleteCliente(id); });
+                servicoForm.addEventListener('submit', handleServicoSubmit);
+                $('#cancelar-edicao-servico').addEventListener('click', resetServicoForm);
+                servicosLista.addEventListener('click', (e) => { const id = e.target.closest('[data-id]')?.dataset.id; if (!id) return; if (e.target.closest('.edit-servico-btn')) handleEditServico(id); if (e.target.closest('.delete-servico-btn')) handleDeleteServico(id); });
+                addServicoBtn.addEventListener('click', handleAddServicoToOrcamento);
+                orcamentoServicosAdicionados.addEventListener('click', (e) => { if (e.target.classList.contains('remove-servico-btn')) handleRemoveServicoFromOrcamento(e.target.dataset.index); });
+                orcamentoDescontoInput.addEventListener('input', updateOrcamentoTotal);
+                orcamentoForm.addEventListener('submit', handleOrcamentoSubmit);
+                historicoLista.addEventListener('click', (e) => { const li = e.target.closest('li'); if (li?.dataset.id) handleHistoricoClick(li.dataset.id); });
+                recentActivityList.addEventListener('click', (e) => { const li = e.target.closest('li[data-id]'); if(li) { showTab('historico'); setTimeout(() => handleHistoricoClick(li.dataset.id), 50); }});
+                
+                $('#btn-aprovar').addEventListener('click', () => updateStatusOrcamento('Aprovado'));
+                $('#btn-finalizar').addEventListener('click', () => updateStatusOrcamento('Finalizado'));
+                $('#btn-cancelar').addEventListener('click', () => updateStatusOrcamento('Cancelado'));
+                $('#btn-excluir-orcamento').addEventListener('click', handleDeleteOrcamento);
+                
+                const copyAndNotify = (text, type) => navigator.clipboard.writeText(text).then(() => showNotification(`${type} copiado!`), () => showNotification(`Erro ao copiar ${type}.`, 'error'));
+                const sendWhatsApp = (type) => { if (!state.orcamentoSelecionado) return; const text = type === 'orcamento' ? generateOrcamentoText(state.orcamentoSelecionado) : generateReciboText(state.orcamentoSelecionado); const phone = state.orcamentoSelecionado.clientes?.telefone; let url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`; if (phone) { const cleanPhone = `55${phone.replace(/\D/g, '')}`; if (cleanPhone.length > 10) url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`; } window.open(url, '_blank'); };
+                $('#btn-copiar-orcamento').addEventListener('click', () => copyAndNotify(generateOrcamentoText(state.orcamentoSelecionado), 'Orçamento'));
+                $('#btn-whatsapp-orcamento').addEventListener('click', () => sendWhatsApp('orcamento'));
+                $('#btn-copiar-recibo').addEventListener('click', () => copyAndNotify(generateReciboText(state.orcamentoSelecionado), 'Recibo'));
+                $('#btn-whatsapp-recibo').addEventListener('click', () => sendWhatsApp('recibo'));
+                
+                modalCancelBtn.addEventListener('click', hideConfirmModal);
+                modalConfirmBtn.addEventListener('click', () => { if (typeof onConfirmCallback === 'function') onConfirmCallback(); });
+                
+                searchClienteInput.addEventListener('input', renderClientes);
+                searchServicoInput.addEventListener('input', renderServicos);
+                searchHistoricoInput.addEventListener('input', renderOrcamentos);
+                clienteTelefoneInput.addEventListener('input', (e) => { e.target.value = formatPhone(e.target.value); });
+                
+                showTab('dashboard');
+                fetchAllData();
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
