@@ -7,14 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
       :root {
-        --bg-primary: #121212; --bg-secondary: #1C1C1E; --bg-tertiary: #2a2a2a;
-        --accent-primary: #d32f2f; --text-primary: #e0e0e0; --text-secondary: #b0b0b0;
-        --border-color: rgba(255, 255, 255, 0.1); --border-radius: 12px;
+        --bg-primary: #121212; --bg-secondary: #1C1C1E; --accent-primary: #d32f2f; --text-primary: #e0e0e0; 
+        --text-secondary: #b0b0b0; --border-color: rgba(255, 255, 255, 0.1); --border-radius: 8px;
       }
       * { box-sizing: border-box; }
-      body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-family); margin: 0; }
+      body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; margin: 0; }
       header { background: var(--accent-primary); color: #fff; padding: 16px; text-align: center; font-size: 1.5rem; font-weight: 700; }
       nav { display: flex; background: #1a1a1a; justify-content: center; flex-wrap: wrap; }
       nav button { background: transparent; color: var(--text-secondary); border: none; padding: 15px 20px; cursor: pointer; font-weight: 600; }
@@ -24,17 +24,12 @@
       .tab-content.active { display: block; }
       .card { background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
       form label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
-      form input, form select { width: 100%; padding: 12px; margin-bottom: 18px; border: 1px solid var(--border-color); background-color: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; font-size: 1rem; }
+      form input, form select { width: 100%; padding: 12px; margin-bottom: 18px; border: 1px solid var(--border-color); background-color: #2a2a2a; color: var(--text-primary); border-radius: 8px; font-size: 1rem; }
       form button { background: var(--accent-primary); color: #fff; border: none; width: 100%; padding: 14px; cursor: pointer; font-weight: 700; font-size: 1rem; border-radius: 8px; }
-      form button:disabled { background-color: #555; }
       .item-list { list-style: none; padding: 0; margin-top: 20px; }
       .item-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
       .item-list li:last-child { border-bottom: none; }
-      .item-actions { display: flex; gap: 10px; }
       .item-actions button { background: none; border: none; padding: 8px; cursor: pointer; color: var(--text-secondary); }
-      .item-actions svg { width: 20px; height: 20px; stroke: currentColor; }
-      .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; }
-      .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -43,66 +38,32 @@
 <nav>
   <button data-tab="clientes">Clientes</button>
   <button data-tab="servicos">Serviços</button>
-  <button data-tab="orcamentos">Novo Orçamento</button>
-  <button data-tab="historico">Histórico</button>
+  <button data-tab="orcamentos">Orçamentos</button>
 </nav>
 
 <main id="main-container">
   <section id="clientes" class="tab-content card"></section>
   <section id="servicos" class="tab-content card" style="display:none;"></section>
-  <section id="orcamentos" class="tab-content card" style="display:none;">(Em breve)</section>
-  <section id="historico" class="tab-content card" style="display:none;">(Em breve)</section>
+  <section id="orcamentos" class="tab-content card" style="display:none;"></section>
 </main>
-
-<div id="toast-container"></div>
 
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
     document.addEventListener('DOMContentLoaded', () => {
-        const supabaseUrl = 'https://zkdfimbfwgofkmmcvyfu.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprZGZpbWJmd2dvZmttbWN2eWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MzQxMTksImV4cCI6MjA2NjIxMDExOX0.vOTrEVYX30FpWPQykY5CF1QCfkyG5gDLnI_2N9TATRE';
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        const state = { clientes: [], servicos: [] };
-        const icons = {
-            edit: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
-            delete: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-        };
-        const mainContainer = document.getElementById('main-container');
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            toast.style.backgroundColor = type === 'error' ? '#d9534f' : '#28a745';
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        async function loadAndRender() {
-            try {
-                const [clientesRes, servicosRes] = await Promise.all([
-                    supabase.from('clientes').select('*').order('nome'),
-                    supabase.from('servicos').select('*').order('descricao')
-                ]);
-                
-                if (clientesRes.error) throw clientesRes.error;
-                if (servicosRes.error) throw servicosRes.error;
-
-                state.clientes = clientesRes.data || [];
-                state.servicos = servicosRes.data || [];
-                
-                renderClientes();
-                renderServicos();
-
-            } catch (error) {
-                showToast(`Erro ao carregar dados: ${error.message}`, 'error');
-            }
-        }
         
-        function renderClientes() {
+        // --- CHAVES DO SEU NOVO PROJETO SUPABASE ---
+        const supabaseUrl = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
+        
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const icons = { edit: `✏️`, delete: `🗑️` };
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
+        async function renderClientes() {
+            const { data: clientes, error } = await supabase.from('clientes').select('*').order('nome');
+            if (error) { console.error('Erro ao buscar clientes:', error); return; }
             const container = document.getElementById('clientes');
             container.innerHTML = `<h3>Clientes</h3>
                 <form id="form-cliente">
@@ -111,115 +72,104 @@
                   <label>Telefone</label><input type="tel" name="telefone" />
                   <label>Veículo</label><input type="text" name="carro" />
                   <label>Placa</label><input type="text" name="placa" />
-                  <button type="submit" class="btn-primary">Salvar Cliente</button>
+                  <button type="submit">Salvar Cliente</button>
                 </form>
-                <ul class="item-list">${state.clientes.map(c => `<li data-id="${c.id}"><div class="item-info">${c.nome}</div><div class="item-actions"><button data-action="edit" data-type="clientes">${icons.edit}</button><button data-action="delete" data-type="clientes">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum cliente cadastrado.</li>`}
-                </ul>`;
+                <ul class="item-list">${clientes.map(c => `<li data-id="${c.id}"><div>${c.nome}</div><div class="item-actions"><button type="button" onclick="window.app.editItem('clientes', ${c.id})">${icons.edit}</button><button type="button" onclick="window.app.deleteItem('clientes', ${c.id})">${icons.delete}</button></div></li>`).join('') || `<li>Nenhum cliente.</li>`}</ul>`;
+            document.getElementById('form-cliente').addEventListener('submit', handleFormSubmit);
         }
         
-        function renderServicos() {
+        async function renderServicos() {
+            const { data: servicos, error } = await supabase.from('servicos').select('*').order('descricao');
+            if (error) { console.error('Erro ao buscar serviços:', error); return; }
             const container = document.getElementById('servicos');
             container.innerHTML = `<h3>Serviços</h3>
                 <form id="form-servico">
                   <input type="hidden" name="id" />
                   <label>Descrição</label><input type="text" name="descricao" required />
                   <label>Valor (R$)</label><input type="number" step="0.01" name="valor" required />
-                  <button type="submit" class="btn-primary">Salvar Serviço</button>
+                  <button type="submit">Salvar Serviço</button>
                 </form>
-                <ul class="item-list">${state.servicos.map(s => `<li data-id="${s.id}"><div class="item-info">${s.descricao} - R$${s.valor.toFixed(2)}</div><div class="item-actions"><button data-action="edit" data-type="servicos">${icons.edit}</button><button data-action="delete" data-type="servicos">${icons.delete}</button></div></li>`).join('') || `<li style="justify-content:center;">Nenhum serviço cadastrado.</li>`}
-                </ul>`;
+                <ul class="item-list">${servicos.map(s => `<li data-id="${s.id}"><div>${s.descricao} - R$${s.valor.toFixed(2)}</div><div class="item-actions"><button type="button" onclick="window.app.editItem('servicos', ${s.id})">✏️</button><button type="button" onclick="window.app.deleteItem('servicos', ${s.id})">🗑️</button></div></li>`).join('') || '<li>Nenhum serviço.</li>'}</ul>`;
+            document.getElementById('form-servico').addEventListener('submit', handleFormSubmit);
         }
 
+        async function renderOrcamentos() {
+            const [ {data: clientes}, {data: servicos} ] = await Promise.all([
+                supabase.from('clientes').select('id, nome'),
+                supabase.from('servicos').select('id, descricao')
+            ]);
+            const container = document.getElementById('orcamentos');
+            container.innerHTML = `<h3>Novo Orçamento</h3>
+                <form id="form-orcamento">
+                  <label>Cliente</label><select name="cliente_id" required><option value="">Selecione...</option>${(clientes || []).map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}</select>
+                  <label>Serviço</label><select name="servico_id" required><option value="">Selecione...</option>${(servicos || []).map(s => `<option value="${s.id}">${s.descricao}</option>`).join('')}</select>
+                  <label>Desconto (%)</label><input type="number" name="desconto" value="0" min="0" max="100" />
+                  <button type="submit">Salvar Orçamento</button>
+                </form>`;
+            document.getElementById('form-orcamento').addEventListener('submit', handleFormSubmit);
+        }
+
+        async function loadAll() {
+            await Promise.all([
+                renderClientes(),
+                renderServicos(),
+                renderOrcamentos()
+            ]);
+        }
+
+        // --- HANDLERS ---
         async function handleFormSubmit(e) {
             e.preventDefault();
             const form = e.target;
             const tableName = form.id.split('-')[1] + 's';
-            const button = form.querySelector('button');
-            button.disabled = true;
-            button.textContent = 'SALVANDO...';
-
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             const id = data.id;
             delete data.id;
-
+            
             if (data.valor) data.valor = parseFloat(data.valor);
+            if (data.cliente_id) data.cliente_id = parseInt(data.cliente_id);
+            if (data.servico_id) data.servico_id = parseInt(data.servico_id);
 
             const { error } = id ? await supabase.from(tableName).update(data).eq('id', id) : await supabase.from(tableName).insert(data);
 
-            if (error) {
-                showToast(`Erro: ${error.message}`, 'error');
-            } else {
-                showToast(`${tableName.slice(0, -1)} salvo!`, 'success');
-                await loadAndRender();
-            }
-            button.disabled = false;
-            button.textContent = `Salvar ${tableName.charAt(0).toUpperCase() + tableName.slice(1, -1)}`;
+            if (error) { alert(`Erro: ${error.message}`); } 
+            else { alert('Operação concluída com sucesso!'); await loadAll(); }
         }
         
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            
-            const tabElement = document.getElementById(tabName);
-            const navButton = document.querySelector(`nav button[data-tab="${tabName}"]`);
+        window.app = {
+            editItem: async (tableName, id) => {
+                const { data, error } = await supabase.from(tableName).select().eq('id', id).single();
+                if (error) { alert('Erro ao buscar item.'); return; }
+                const form = document.getElementById(`form-${tableName.slice(0, -1)}`);
+                Object.keys(data).forEach(key => { if (form[key]) form[key].value = data[key]; });
+            },
+            deleteItem: async (tableName, id) => {
+                if (confirm('Tem certeza?')) {
+                    const { error } = await supabase.from(tableName).delete().eq('id', id);
+                    if (error) alert(`Erro: ${error.message}`);
+                    else { alert('Item excluído!'); await loadAll(); }
+                }
+            }
+        };
 
-            if (tabElement) tabElement.style.display = 'block';
-            if (navButton) navButton.classList.add('active');
-            
+        // --- NAVEGAÇÃO ---
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => { el.style.display = 'none'; });
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).style.display = 'block';
+            document.querySelector(`nav button[data-tab="${tabName}"]`).classList.add('active');
             localStorage.setItem('activeTab', tabName);
         }
 
-        // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
-        
-        // Listener de Navegação
         document.querySelector('nav').addEventListener('click', e => {
-            if (e.target.dataset.tab) {
-                showTab(e.target.dataset.tab);
-            }
-        });
-
-        // Listener Delegado para Ações (Submit, Click) no container principal
-        mainContainer.addEventListener('submit', e => {
-            if(e.target.id === 'form-cliente' || e.target.id === 'form-servico') {
-                handleFormSubmit(e);
-            }
-        });
-
-        mainContainer.addEventListener('click', e => {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
-
-            const li = button.closest('li[data-id]');
-            const id = parseInt(li.dataset.id);
-            const type = button.dataset.type; // 'clientes' ou 'servicos'
-            const action = button.dataset.action;
-
-            if (action === 'delete') {
-                if (confirm(`Tem certeza que deseja excluir este item?`)) {
-                    supabase.from(type).delete().eq('id', id).then(({error}) => {
-                        if (error) { showToast(`Erro ao excluir: ${error.message}`, 'error'); }
-                        else { showToast('Item excluído!', 'success'); loadAndRender(); }
-                    });
-                }
-            } else if (action === 'edit') {
-                const itemData = state[type].find(item => item.id === id);
-                const form = document.getElementById(`form-${type.slice(0, -1)}`);
-                Object.keys(itemData).forEach(key => {
-                    if (form[key]) form[key].value = itemData[key];
-                });
-                window.scrollTo(0,0);
-            }
+            if (e.target.dataset.tab) showTab(e.target.dataset.tab);
         });
         
-        // Carga Inicial
-        async function init() {
-            const activeTab = localStorage.getItem('activeTab') || 'clientes';
-            showTab(activeTab);
-            await loadAndRender();
-        }
-
-        init();
+        // --- INICIALIZAÇÃO ---
+        const activeTab = localStorage.getItem('activeTab') || 'clientes';
+        showTab(activeTab);
+        loadAll();
     });
 </script>
 </body>
