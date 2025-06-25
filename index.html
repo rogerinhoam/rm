@@ -257,7 +257,7 @@
             width: 100%; 
             padding: 15px; 
             background-color: var(--bg-input);
-            border: 1px solid var(--border-color); 
+            border: 1.5px solid var(--border-color); /* Slightly thicker border for inputs */
             border-radius: 10px;
             color: var(--text-light); 
             font-size: 1.05rem;
@@ -1105,7 +1105,7 @@
                         <h3>Finalizados Mês</h3>
                         <p id="stat-finalizados-mes"></p>
                     </div>
-                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Finalizado" tabindex="0" role="button" aria-label="Ver faturamento total" style="grid-column: span 2;">
+                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Finalizado" style="grid-column: span 2;" tabindex="0" role="button" aria-label="Ver faturamento total">
                         <div class="icon"><i class="fas fa-dollar-sign" aria-hidden="true"></i></div>
                         <h3>Faturamento Total</h3>
                         <p id="stat-faturamento-total"></p>
@@ -1291,7 +1291,7 @@
                                 <button type="button" class="payment-option" data-value="Débito">Débito</button>
                                 <button type="button" class="payment-option" data-value="Boleto">Boleto</button>
                             </div>
-                            <span id="payment-options-validation" class="validation-message" aria-live="polite" style="display: none;">Selecione ao menos uma forma de pagamento.</span>
+                            <span id="payment-options-validation" aria-live="polite" style="display: none;">Selecione ao menos uma forma de pagamento.</span>
                         </div>
                         <div id="orcamento-total" aria-live="polite">TOTAL: R$ 0,00</div>
                         <button type="submit" class="btn btn-primary" id="submit-orcamento-btn" aria-label="Salvar Orçamento"><i class="fas fa-save" aria-hidden="true"></i> Salvar Orçamento</button>
@@ -1472,7 +1472,7 @@
             const orcamentoIdToEditInput = $('#orcamento-id-to-edit'); 
             const orcamentoFormTitle = $('#orcamento-form-title');
             const orcamentoClienteSelect = $('#orcamento-cliente');
-            const orcamentoServicoSelect = $('#orcamento-servico-select');
+            const orcamentoServicoSelect = $('#orcamento-servico-select'); 
             const orcamentoServicoQuantidadeInput = $('#orcamento-servico-quantidade'); 
             const addServicoBtn = $('#add-servico-btn');
             const orcamentoServicosAdicionados = $('#orcamento-servicos-adicionados');
@@ -1596,19 +1596,19 @@
 
                 // Apply filters if navigating to historico tab
                 if (tabId === 'historico') {
-                    filterStatusSelect.value = filterParams.status || '';
-                    filterStartDateInput.value = filterParams.startDate || '';
-                    filterEndDateInput.value = filterParams.endDate || '';
+                    if (filterStatusSelect) filterStatusSelect.value = filterParams.status || '';
+                    if (filterStartDateInput) filterStartDateInput.value = filterParams.startDate || '';
+                    if (filterEndDateInput) filterEndDateInput.value = filterParams.endDate || '';
                     renderOrcamentos(); // Re-render with new filters
                 } else {
                     // Clear history filters when navigating away from history tab
-                    filterStatusSelect.value = '';
-                    filterStartDateInput.value = '';
-                    filterEndDateInput.value = '';
+                    if (filterStatusSelect) filterStatusSelect.value = '';
+                    if (filterStartDateInput) filterStartDateInput.value = '';
+                    if (filterEndDateInput) filterEndDateInput.value = '';
                     // No need to call renderOrcamentos if not on history tab
                 }
                 // Close client details panel if not on clients tab
-                if (tabId !== 'clientes') {
+                if (clientDetailsPanel) { // Added null check
                     clientDetailsPanel.style.display = 'none';
                 }
             };
@@ -1657,26 +1657,26 @@
              */
             const showConfirmModal = (title, message, callback) => { 
                 // Remove existing listeners to prevent multiple calls
-                modalCancelBtn.removeEventListener('click', hideConfirmModal);
+                if (modalCancelBtn) modalCancelBtn.removeEventListener('click', hideConfirmModal);
                 // Define a wrapper function for modalConfirmBtn to handle callback and hide
                 const confirmAndHide = () => {
                     if (typeof onConfirmCallback === 'function') onConfirmCallback();
                     hideConfirmModal();
                 };
-                modalConfirmBtn.removeEventListener('click', confirmAndHide); // Remove previous instance if any
+                if (modalConfirmBtn) modalConfirmBtn.removeEventListener('click', confirmAndHide); // Remove previous instance if any
 
-                modalCancelBtn.addEventListener('click', hideConfirmModal);
-                modalConfirmBtn.addEventListener('click', confirmAndHide); // Add new instance
+                if (modalCancelBtn) modalCancelBtn.addEventListener('click', hideConfirmModal);
+                if (modalConfirmBtn) modalConfirmBtn.addEventListener('click', confirmAndHide); // Add new instance
 
-                $('#modal-title').textContent = title; 
-                $('#modal-message').textContent = message; 
+                if ($('#modal-title')) $('#modal-title').textContent = title; 
+                if ($('#modal-message')) $('#modal-message').textContent = message; 
                 onConfirmCallback = callback; 
-                confirmModal.classList.add('active'); 
+                if (confirmModal) confirmModal.classList.add('active'); 
             };
 
             /** Hides the confirmation modal. */
             const hideConfirmModal = () => { 
-                confirmModal.classList.remove('active'); 
+                if (confirmModal) confirmModal.classList.remove('active'); 
                 onConfirmCallback = null; 
                 // Listeners are removed in showConfirmModal when re-attached
             };
@@ -1845,10 +1845,10 @@
                 const updateNetworkStatus = () => {
                     state.isOffline = !navigator.onLine;
                     if (state.isOffline) {
-                        offlineIndicator.style.display = 'block';
+                        if (offlineIndicator) offlineIndicator.style.display = 'block';
                         showNotification('Você está offline. Conecte-se para sincronizar os dados.', 'error');
                     } else {
-                        offlineIndicator.style.display = 'none';
+                        if (offlineIndicator) offlineIndicator.style.display = 'none';
                         showNotification('Conectado novamente! Sincronizando dados...', 'success');
                         fetchAllData(false); // Trigger a refresh when back online
                     }
@@ -1871,9 +1871,9 @@
                 if (state.isSyncing) return; 
 
                 state.isSyncing = true;
-                syncBtn.classList.add('syncing');
+                if (syncBtn) syncBtn.classList.add('syncing');
                 if (showLoadingOverlay) {
-                    syncOverlay.style.display = 'flex'; 
+                    if (syncOverlay) syncOverlay.style.display = 'flex'; 
                 }
                 
                 renderSkeletons(); // Show skeletons before fetching
@@ -1908,9 +1908,9 @@
                     renderEmptyStatesOnFailure(); 
                 } finally {
                     state.isSyncing = false;
-                    syncBtn.classList.remove('syncing');
+                    if (syncBtn) syncBtn.classList.remove('syncing');
                     if (showLoadingOverlay) {
-                        syncOverlay.style.display = 'none'; 
+                        if (syncOverlay) syncOverlay.style.display = 'none'; 
                     }
                 }
             };
@@ -1933,7 +1933,7 @@
                     } else {
                         // If selected orcamento was deleted, clear details
                         state.orcamentoSelecionado = null;
-                        detalhesContainer.style.display = 'none';
+                        if (detalhesContainer) detalhesContainer.style.display = 'none';
                         showNotification('Orçamento previamente selecionado não encontrado após sincronização.', 'warning');
                     }
                 }
@@ -1989,11 +1989,11 @@
                     .reduce((sum, o) => sum + parseFloat(o.valor_total || 0), 0);
 
                 // Update text content of stat cards directly
-                $('#stat-clientes').textContent = state.clientes.length;
-                $('#stat-pendentes').textContent = state.orcamentos.filter(o => o.status === 'Orçamento').length;
-                $('#stat-aprovados').textContent = state.orcamentos.filter(o => o.status === 'Aprovado').length;
-                $('#stat-finalizados-mes').textContent = state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at || o.created_at) >= startOfMonth).length;
-                $('#stat-faturamento-total').textContent = formatCurrency(totalRevenue);
+                if ($('#stat-clientes')) $('#stat-clientes').textContent = state.clientes.length;
+                if ($('#stat-pendentes')) $('#stat-pendentes').textContent = state.orcamentos.filter(o => o.status === 'Orçamento').length;
+                if ($('#stat-aprovados')) $('#stat-aprovados').textContent = state.orcamentos.filter(o => o.status === 'Aprovado').length;
+                if ($('#stat-finalizados-mes')) $('#stat-finalizados-mes').textContent = state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at || o.created_at) >= startOfMonth).length;
+                if ($('#stat-faturamento-total')) $('#stat-faturamento-total').textContent = formatCurrency(totalRevenue);
 
                 renderMonthlyStatsChart();
             };
@@ -2022,8 +2022,13 @@
 
                 const ctx = document.createElement('canvas');
                 ctx.id = 'monthlyFinalizedChartCanvas';
-                $('#monthly-finalized-chart').innerHTML = ''; // Clear previous HTML bars
-                $('#monthly-finalized-chart').appendChild(ctx);
+                if ($('#monthly-finalized-chart')) { // Added null check
+                    $('#monthly-finalized-chart').innerHTML = ''; // Clear previous HTML bars
+                    $('#monthly-finalized-chart').appendChild(ctx);
+                } else {
+                    console.warn('Cannot find #monthly-finalized-chart to render chart.');
+                    return;
+                }
 
                 // Prepare data for Chart.js
                 const chartLabels = months.map(m => m.charAt(0).toUpperCase() + m.slice(1).replace('.', ''));
@@ -2101,11 +2106,11 @@
                 const recentOrcamentos = sortedOrcamentos.slice(0, 8);
 
                 if (recentOrcamentos.length === 0) {
-                    recentActivityList.innerHTML = renderEmptyState('Nenhuma atividade recente.', 'Crie um novo orçamento para começar.');
+                    if (recentActivityList) recentActivityList.innerHTML = renderEmptyState('Nenhuma atividade recente.', 'Crie um novo orçamento para começar.');
                     return;
                 }
 
-                recentActivityList.innerHTML = recentOrcamentos.map(orc => `
+                if (recentActivityList) recentActivityList.innerHTML = recentOrcamentos.map(orc => `
                     <li data-id="${orc.id}" class="data-list-item">
                         <div>
                             <strong>${orc.clientes?.nome || 'Cliente Removido'}</strong><br>
@@ -2146,11 +2151,11 @@
 
 
                 if (filtered.length === 0) {
-                    clientesLista.innerHTML = renderEmptyState('Nenhum cliente encontrado.', 'Adicione um novo cliente no formulário ao lado.');
+                    if (clientesLista) clientesLista.innerHTML = renderEmptyState('Nenhum cliente encontrado.', 'Adicione um novo cliente no formulário ao lado.');
                     return;
                 }
 
-                clientesLista.innerHTML = filtered.map(c => `
+                if (clientesLista) clientesLista.innerHTML = filtered.map(c => `
                     <li data-id="${c.id}" class="data-list-item" role="listitem" tabindex="0">
                         <div>
                             <strong data-field="nome">${c.nome}</strong><br>
@@ -2219,19 +2224,59 @@
                     showNotification('Cliente não encontrado para edição.', 'error');
                     return;
                 }
-                // Directly populate the form on the left for editing
-                state.editandoClienteId = id; 
-                $('#cliente-form-title').innerHTML = 'Editar Cliente <i class="fas fa-user-edit" aria-hidden="true"></i>'; 
-                clienteNomeInput.value = c.nome; 
-                clienteTelefoneInput.value = c.telefone; 
-                clienteCarroInput.value = c.carro; 
-                clientePlacaInput.value = c.placa; 
-                $('#cancelar-edicao-cliente').style.display = 'inline-flex'; 
-                $('#cliente-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                // Manually trigger validation icons for pre-filled data
-                handleValidationIcon(clienteNomeInput);
-                handleValidationIcon(clienteTelefoneInput);
-                handleValidationIcon(clientePlacaInput);
+                const listItem = $(`#clientes-lista li[data-id="${id}"]`);
+                if (listItem) {
+                    listItem.classList.add('editing');
+                    listItem.querySelectorAll('[data-field]').forEach(fieldSpan => {
+                        const fieldName = fieldSpan.dataset.field;
+                        const inputElement = listItem.querySelector(`.inline-edit-input[data-field="${fieldName}"]`);
+                        if (inputElement) {
+                            inputElement.value = c[fieldName] || '';
+                            fieldSpan.style.display = 'none';
+                            inputElement.style.display = 'inline-block';
+                            if (fieldName === 'telefone') { // Apply format for phone input
+                                inputElement.value = formatPhone(c.telefone);
+                            } else if (fieldName === 'placa') { // Apply format for placa input
+                                inputElement.value = c.placa ? c.placa.replace(/^([A-Z]{3})(\d{4})$/, '$1-$2').replace(/^([A-Z]{3}\d)([A-Z])(\d{2})$/, '$1$2-$3') : '';
+                            }
+                            // Add event listeners for Enter/Escape on inline inputs
+                            inputElement.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault(); // Prevent new line in textareas or form submission
+                                    handleSaveInlineEditCliente(id, listItem);
+                                } else if (e.key === 'Escape') {
+                                    handleCancelInlineEditCliente(id, listItem);
+                                }
+                            });
+                        }
+                    });
+                    // Toggle buttons for inline edit
+                    const editButton = listItem.querySelector('.edit-cliente-btn');
+                    const deleteButton = listItem.querySelector('.delete-cliente-btn');
+                    const saveButton = listItem.querySelector('.save-inline-edit-cliente-btn');
+                    const cancelButton = listItem.querySelector('.cancel-inline-edit-cliente-btn');
+
+                    if (editButton) editButton.style.display = 'none';
+                    if (deleteButton) deleteButton.style.display = 'none';
+                    if (saveButton) saveButton.style.display = 'inline-flex';
+                    if (cancelButton) cancelButton.style.display = 'inline-flex';
+
+                    // Scroll to the item
+                    listItem.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                } else {
+                    // Fallback to form editing if not inline-editable or element not found
+                    state.editandoClienteId = id; 
+                    if ($('#cliente-form-title')) $('#cliente-form-title').innerHTML = 'Editar Cliente <i class="fas fa-user-edit" aria-hidden="true"></i>'; 
+                    if (clienteNomeInput) clienteNomeInput.value = c.nome; 
+                    if (clienteTelefoneInput) clienteTelefoneInput.value = c.telefone; 
+                    if (clienteCarroInput) clienteCarroInput.value = c.carro; 
+                    if (clientePlacaInput) clientePlacaInput.value = c.placa; 
+                    if ($('#cancelar-edicao-cliente')) $('#cancelar-edicao-cliente').style.display = 'inline-flex'; 
+                    if ($('#cliente-form-title')) $('#cliente-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                    handleValidationIcon(clienteNomeInput);
+                    handleValidationIcon(clienteTelefoneInput);
+                    handleValidationIcon(clientePlacaInput);
+                }
             };
 
             /** Handles saving inline edits for a client. */
@@ -2278,12 +2323,17 @@
                     // Manually hide inputs and show spans for immediate feedback before full re-render
                     listItem.querySelectorAll('.inline-edit-input').forEach(input => input.style.display = 'none');
                     listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
-                    listItem.querySelector('.edit-cliente-btn').style.display = 'inline-flex';
-                    listItem.querySelector('.delete-cliente-btn').style.display = 'inline-flex';
-                    listItem.querySelector('.save-inline-edit-cliente-btn').style.display = 'none';
-                    listItem.querySelector('.cancel-inline-edit-cliente-btn').style.display = 'none';
+                    const editButton = listItem.querySelector('.edit-cliente-btn');
+                    const deleteButton = listItem.querySelector('.delete-cliente-btn');
+                    const saveButton = listItem.querySelector('.save-inline-edit-cliente-btn');
+                    const cancelButton = listItem.querySelector('.cancel-inline-edit-cliente-btn');
 
-                } catch (error) {
+                    if (editButton) editButton.style.display = 'inline-flex';
+                    if (deleteButton) deleteButton.style.display = 'inline-flex';
+                    if (saveButton) saveButton.style.display = 'none';
+                    if (cancelButton) cancelButton.style.display = 'none';
+
+                } catch (error) { // Added missing catch block
                     console.error('Erro ao guardar edição in-line do cliente:', error);
                     showNotification(`Erro ao guardar: ${error.message}`, 'error');
                 }
@@ -2297,10 +2347,15 @@
                     input.setCustomValidity(''); // Clear any validation errors
                 });
                 listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
-                listItem.querySelector('.edit-cliente-btn').style.display = 'inline-flex';
-                listItem.querySelector('.delete-cliente-btn').style.display = 'inline-flex';
-                listItem.querySelector('.save-inline-edit-cliente-btn').style.display = 'none';
-                listItem.querySelector('.cancel-inline-edit-cliente-btn').style.display = 'none';
+                const editButton = listItem.querySelector('.edit-cliente-btn');
+                const deleteButton = listItem.querySelector('.delete-cliente-btn');
+                const saveButton = listItem.querySelector('.save-inline-edit-cliente-btn');
+                const cancelButton = listItem.querySelector('.cancel-inline-edit-cliente-btn');
+
+                if (editButton) editButton.style.display = 'inline-flex';
+                if (deleteButton) deleteButton.style.display = 'inline-flex';
+                if (saveButton) saveButton.style.display = 'none';
+                if (cancelButton) cancelButton.style.display = 'none';
             };
 
 
@@ -2326,59 +2381,83 @@
             /** Resets the client form to its initial state. */
             const resetClienteForm = () => { 
                 state.editandoClienteId = null; 
-                clienteForm.reset(); 
-                $('#cliente-form-title').innerHTML = 'Novo Cliente <i class="fas fa-user-plus" aria-hidden="true"></i>'; 
-                $('#cancelar-edicao-cliente').style.display = 'none'; 
+                if (clienteForm) clienteForm.reset(); 
+                if ($('#cliente-form-title')) $('#cliente-form-title').innerHTML = 'Novo Cliente <i class="fas fa-user-plus" aria-hidden="true"></i>'; 
+                if ($('#cancelar-edicao-cliente')) $('#cancelar-edicao-cliente').style.display = 'none'; 
                 // Clear all custom validities and hide validation icons
-                clienteNomeInput.setCustomValidity(''); 
-                clienteTelefoneInput.setCustomValidity('');
-                clientePlacaInput.setCustomValidity('');
+                if (clienteNomeInput) clienteNomeInput.setCustomValidity(''); 
+                if (clienteTelefoneInput) clienteTelefoneInput.setCustomValidity('');
+                if (clientePlacaInput) clientePlacaInput.setCustomValidity('');
                 $$('#cliente-form .validation-icon').forEach(icon => icon.style.display = 'none');
             };
 
             /** Displays detailed information for a selected client, including past orders. */
-            const displayClientDetails = (clientId) => {
-                const client = state.clientes.find(c => c.id === clientId);
-                if (!client) {
-                    showNotification('Cliente não encontrado para detalhes.', 'error');
+            const displayClientDetails = async (clientId) => {
+                // Fetch the client data fresh to ensure it's up-to-date
+                const { data: client, error: clientError } = await db.from('clientes')
+                    .select('*')
+                    .eq('id', clientId)
+                    .single();
+
+                if (clientError || !client) {
+                    showNotification(`Erro: Cliente não encontrado na base de dados.`, 'error');
+                    if (clientDetailsPanel) clientDetailsPanel.style.display = 'none'; // Ensure panel is hidden
                     return;
                 }
 
-                $('#client-detail-name').textContent = client.nome;
-                $('#client-detail-phone').textContent = formatPhone(client.telefone);
-                $('#client-detail-car').textContent = client.carro || 'N/D';
-                $('#client-detail-plate').textContent = client.placa || 'N/D';
+                if ($('#client-detail-name')) $('#client-detail-name').textContent = client.nome;
+                if ($('#client-detail-phone')) $('#client-detail-phone').textContent = formatPhone(client.telefone);
+                if ($('#client-detail-car')) $('#client-detail-car').textContent = client.carro || 'N/D';
+                if ($('#client-detail-plate')) $('#client-detail-plate').textContent = client.placa || 'N/D';
 
-                const clientPastOrcamentos = state.orcamentos.filter(orc => orc.clientes?.id === clientId);
+                // Fetch past orcamentos specific to this client directly from DB
+                const { data: clientOrcamentosRes, error: clientOrcamentosError } = await db.from('orcamentos')
+                    .select(`
+                        id, created_at, updated_at, valor_total, status, desconto, formas_pagamento, 
+                        orcamento_itens ( id, servico_id, descricao_servico, valor_cobrado, quantidade )
+                    `)
+                    .eq('cliente_id', client.id)
+                    .order('created_at', { ascending: false });
+
+                if (clientOrcamentosError) {
+                    console.error('Erro ao buscar histórico do cliente:', clientOrcamentosError);
+                    showNotification(`Erro ao carregar histórico do cliente: ${clientOrcamentosError.message}`, 'error');
+                    if ($('#client-past-orcamentos')) $('#client-past-orcamentos').innerHTML = renderEmptyState('Não foi possível carregar o histórico deste cliente.', 'Erro de conexão ou dados.');
+                    return;
+                }
+
+                const clientPastOrcamentos = clientOrcamentosRes;
                 const pastOrcamentosList = $('#client-past-orcamentos');
 
-                if (clientPastOrcamentos.length === 0) {
-                    pastOrcamentosList.innerHTML = renderEmptyState('Nenhum orçamento anterior para este cliente.', '');
-                } else {
-                    pastOrcamentosList.innerHTML = clientPastOrcamentos.map(orc => `
-                        <li data-id="${orc.id}" class="data-list-item">
-                            <div>
-                                <strong>${formatDateTime(orc.created_at)}</strong><br>
-                                <small>${orc.orcamento_itens.map(item => `${item.descricao_servico} (x${item.quantidade})`).join(', ')}</small>
-                            </div>
-                            <div>
-                                <span class="status-indicator status-${orc.status}">${orc.status}</span>
-                                <strong>${formatCurrency(orc.valor_total)}</strong>
-                            </div>
-                        </li>
-                    `).join('');
-                    // Add event listener to each past budget item to open its details
-                    pastOrcamentosList.querySelectorAll('li').forEach(li => {
-                        li.addEventListener('click', (e) => {
-                            const orcId = e.currentTarget.dataset.id;
-                            showTab('historico'); // Switch to history tab
-                            setTimeout(() => handleHistoricoClick(orcId), 100); // Open details after tab switch
+                if (pastOrcamentosList) { // Check if the element exists before manipulating
+                    if (clientPastOrcamentos.length === 0) {
+                        pastOrcamentosList.innerHTML = renderEmptyState('Nenhum orçamento anterior para este cliente.', '');
+                    } else {
+                        pastOrcamentosList.innerHTML = clientPastOrcamentos.map(orc => `
+                            <li data-id="${orc.id}" class="data-list-item">
+                                <div>
+                                    <strong>${formatDateTime(orc.created_at)}</strong><br>
+                                    <small>${orc.orcamento_itens.map(item => `${item.descricao_servico} (x${item.quantidade})`).join(', ')}</small>
+                                </div>
+                                <div>
+                                    <span class="status-indicator status-${orc.status}">${orc.status}</span>
+                                    <strong>${formatCurrency(orc.valor_total)}</strong>
+                                </div>
+                            </li>
+                        `).join('');
+                        // Add event listener to each past budget item to open its details
+                        pastOrcamentosList.querySelectorAll('li').forEach(li => {
+                            li.addEventListener('click', (e) => {
+                                const orcId = e.currentTarget.dataset.id;
+                                showTab('historico'); // Switch to history tab
+                                setTimeout(() => handleHistoricoClick(orcId), 100); // Open details after tab switch
+                            });
                         });
-                    });
+                    }
                 }
                 
-                clientDetailsPanel.style.display = 'block';
-                clientDetailsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (clientDetailsPanel) clientDetailsPanel.style.display = 'block'; // Check if element exists
+                if (clientDetailsPanel) clientDetailsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Check if element exists
             };
             
             // ===================================================================================
@@ -2402,19 +2481,20 @@
                     filtered.sort((a, b) => b.valor - a.valor);
                 }
 
-                 if (filtered.length === 0) {
-                    servicosLista.innerHTML = renderEmptyState('Nenhum serviço encontrado.', 'Adicione um novo serviço no formulário ao lado.');
+
+                if (filtered.length === 0) {
+                    if (servicosLista) servicosLista.innerHTML = renderEmptyState('Nenhum serviço encontrado.', 'Adicione um novo serviço no formulário ao lado.');
                     return;
                 }
 
-                servicosLista.innerHTML = filtered.map(s => `
+                if (servicosLista) servicosLista.innerHTML = filtered.map(s => `
                     <li data-id="${s.id}" class="data-list-item" role="listitem" tabindex="0">
                         <div>
                             <strong data-field="descricao">${s.descricao}</strong>
-                            <input type="text" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="descricao" value="${s.descricao || ''}" style="width: calc(100% - 20px);" aria-label="Editar descrição">
+                            <input type="text" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="descricao" value="${s.descricao || ''}" style="width: calc(100% - 20px);">
                             <br>
                             <small>R$ <span data-field="valor">${s.valor.toFixed(2).replace('.', ',')}</span></small>
-                            <input type="number" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="valor" value="${s.valor}" step="0.01" style="width: calc(100% - 20px);" aria-label="Editar valor">
+                            <input type="number" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="valor" value="${s.valor}" step="0.01" style="width: calc(100% - 20px);">
                         </div>
                         <div class="item-actions">
                             <button class="btn btn-sm btn-secondary edit-servico-btn" data-id="${s.id}" title="Editar Serviço" aria-label="Editar Serviço"><i class="fas fa-edit" aria-hidden="true"></i> Editar</button>
@@ -2482,24 +2562,38 @@
                             inputElement.value = s[fieldName]; // value is already number, no need for formatCurrency
                             fieldSpan.style.display = 'none';
                             inputElement.style.display = 'inline-block';
+                            // Add event listeners for Enter/Escape on inline inputs
+                            inputElement.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault(); // Prevent new line in textareas or form submission
+                                    handleSaveInlineEditServico(id, listItem);
+                                } else if (e.key === 'Escape') {
+                                    handleCancelInlineEditServico(id, listItem);
+                                }
+                            });
                         }
                     });
                     // Toggle buttons
-                    listItem.querySelector('.edit-servico-btn').style.display = 'none';
-                    listItem.querySelector('.delete-servico-btn').style.display = 'none';
-                    listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'inline-flex';
-                    listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'inline-flex';
+                    const editButton = listItem.querySelector('.edit-servico-btn');
+                    const deleteButton = listItem.querySelector('.delete-servico-btn');
+                    const saveButton = listItem.querySelector('.save-inline-edit-servico-btn');
+                    const cancelButton = listItem.querySelector('.cancel-inline-edit-servico-btn');
+
+                    if (editButton) editButton.style.display = 'none';
+                    if (deleteButton) deleteButton.style.display = 'none';
+                    if (saveButton) saveButton.style.display = 'inline-flex';
+                    if (cancelButton) cancelButton.style.display = 'inline-flex';
 
                     // Scroll to the item
                     listItem.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
                 } else {
                     // Fallback to form editing if not inline-editable or element not found
                     state.editandoServicoId = id; 
-                    $('#servico-form-title').innerHTML = 'Editar Serviço <i class="fas fa-edit" aria-hidden="true"></i>'; 
-                    servicoDescricaoInput.value = s.descricao; 
-                    servicoValorInput.value = s.valor; 
-                    $('#cancelar-edicao-servico').style.display = 'inline-flex'; 
-                    $('#servico-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                    if ($('#servico-form-title')) $('#servico-form-title').innerHTML = 'Editar Serviço <i class="fas fa-edit" aria-hidden="true"></i>'; 
+                    if (servicoDescricaoInput) servicoDescricaoInput.value = s.descricao; 
+                    if (servicoValorInput) servicoValorInput.value = s.valor; 
+                    if ($('#cancelar-edicao-servico')) $('#cancelar-edicao-servico').style.display = 'inline-flex'; 
+                    if ($('#servico-form-title')) $('#servico-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
                     // Manually trigger validation icons
                     handleValidationIcon(servicoDescricaoInput);
                     handleValidationIcon(servicoValorInput);
@@ -2547,11 +2641,16 @@
                     listItem.classList.remove('editing');
                     listItem.querySelectorAll('.inline-edit-input').forEach(input => input.style.display = 'none');
                     listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
-                    listItem.querySelector('.edit-servico-btn').style.display = 'inline-flex';
-                    listItem.querySelector('.delete-servico-btn').style.display = 'inline-flex';
-                    listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'none';
-                    listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'none';
-                } catch (error) {
+                    const editButton = listItem.querySelector('.edit-servico-btn');
+                    const deleteButton = listItem.querySelector('.delete-servico-btn');
+                    const saveButton = listItem.querySelector('.save-inline-edit-servico-btn');
+                    const cancelButton = listItem.querySelector('.cancel-inline-edit-servico-btn');
+
+                    if (editButton) editButton.style.display = 'inline-flex';
+                    if (deleteButton) deleteButton.style.display = 'inline-flex';
+                    if (saveButton) saveButton.style.display = 'none';
+                    if (cancelButton) cancelButton.style.display = 'none';
+                } catch (error) { // Added missing catch block
                     console.error('Erro ao guardar edição in-line do serviço:', error);
                     showNotification(`Erro ao guardar: ${error.message}`, 'error');
                 }
@@ -2565,10 +2664,15 @@
                     input.setCustomValidity(''); // Clear any validation errors
                 });
                 listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
-                listItem.querySelector('.edit-servico-btn').style.display = 'inline-flex';
-                listItem.querySelector('.delete-servico-btn').style.display = 'inline-flex';
-                listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'none';
-                listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'none';
+                const editButton = listItem.querySelector('.edit-servico-btn');
+                const deleteButton = listItem.querySelector('.delete-servico-btn');
+                const saveButton = listItem.querySelector('.save-inline-edit-servico-btn');
+                const cancelButton = listItem.querySelector('.cancel-inline-edit-servico-btn');
+
+                if (editButton) editButton.style.display = 'inline-flex';
+                if (deleteButton) deleteButton.style.display = 'inline-flex';
+                if (saveButton) saveButton.style.display = 'none';
+                if (cancelButton) cancelButton.style.display = 'none';
             };
 
 
@@ -2595,11 +2699,11 @@
             /** Resets the service form to its initial state. */
             const resetServicoForm = () => { 
                 state.editandoServicoId = null; 
-                servicoForm.reset(); 
-                $('#servico-form-title').innerHTML = 'Novo Serviço <i class="fas fa-clipboard-list" aria-hidden="true"></i>'; 
-                $('#cancelar-edicao-servico').style.display = 'none'; 
-                servicoDescricaoInput.setCustomValidity(''); 
-                servicoValorInput.setCustomValidity(''); 
+                if (servicoForm) servicoForm.reset(); 
+                if ($('#servico-form-title')) $('#servico-form-title').innerHTML = 'Novo Serviço <i class="fas fa-clipboard-list" aria-hidden="true"></i>'; 
+                if ($('#cancelar-edicao-servico')) $('#cancelar-edicao-servico').style.display = 'none'; 
+                if (servicoDescricaoInput) servicoDescricaoInput.setCustomValidity(''); 
+                if (servicoValorInput) servicoValorInput.setCustomValidity(''); 
                 $$('#servico-form .validation-icon').forEach(icon => icon.style.display = 'none');
             };
 
@@ -2609,32 +2713,34 @@
 
             /** Populates the client dropdown for new quotes. */
             const renderOrcamentoClienteOptions = () => { 
+                if (!orcamentoClienteSelect) return; // Defensive check
                 if (state.clientes.length === 0) {
                     orcamentoClienteSelect.innerHTML = '<option value="">Nenhum cliente cadastrado...</option>';
                     orcamentoClienteSelect.disabled = true;
-                    addServicoBtn.disabled = true; 
-                    orcamentoServicoQuantidadeInput.disabled = true;
+                    if (addServicoBtn) addServicoBtn.disabled = true; 
+                    if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.disabled = true;
                     return;
                 }
                 orcamentoClienteSelect.disabled = false;
-                addServicoBtn.disabled = false;
-                orcamentoServicoQuantidadeInput.disabled = false;
+                if (addServicoBtn) addServicoBtn.disabled = false;
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.disabled = false;
                 orcamentoClienteSelect.innerHTML = '<option value="">Selecione um cliente...</option>' + 
                     state.clientes.map(c => `<option value="${c.id}">${c.nome} ${c.carro ? `(${c.carro})` : ''}</option>`).join(''); 
             };
 
             /** Populates the service dropdown for new quotes. */
             const renderOrcamentoServicoOptions = () => { 
+                if (!orcamentoServicoSelect) return; // Defensive check
                 if (state.servicos.length === 0) {
                     orcamentoServicoSelect.innerHTML = '<option value="">Nenhum serviço cadastrado...</option>';
                     orcamentoServicoSelect.disabled = true;
-                    addServicoBtn.disabled = true; 
-                    orcamentoServicoQuantidadeInput.disabled = true;
+                    if (addServicoBtn) addServicoBtn.disabled = true; 
+                    if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.disabled = true;
                     return;
                 }
                 orcamentoServicoSelect.disabled = false;
-                addServicoBtn.disabled = false;
-                orcamentoServicoQuantidadeInput.disabled = false;
+                if (addServicoBtn) addServicoBtn.disabled = false;
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.disabled = false;
                 orcamentoServicoSelect.innerHTML = '<option value="">Selecione um serviço...</option>' + 
                     state.servicos.map(s => `<option value="${s.id}">${s.descricao} (${formatCurrency(s.valor)})</option>`).join(''); 
             };
@@ -2650,10 +2756,10 @@
                 }
                 if (isNaN(quantidade) || quantidade <= 0) {
                     showNotification('A quantidade deve ser um número positivo.', 'warning');
-                    orcamentoServicoQuantidadeInput.reportValidity();
+                    if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.reportValidity();
                     return;
                 }
-                orcamentoServicoQuantidadeInput.setCustomValidity(''); 
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.setCustomValidity(''); 
 
                 const s = state.servicos.find(sv => sv.id == id); 
                 if(!s) {
@@ -2677,9 +2783,9 @@
                 
                 renderNovoOrcamentoItens(); 
                 updateOrcamentoTotal(); 
-                orcamentoServicoSelect.value = ''; 
-                orcamentoServicoQuantidadeInput.value = '1';
-                orcamentoServicosAdicionados.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                if (orcamentoServicoSelect) orcamentoServicoSelect.value = ''; 
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.value = '1';
+                if (orcamentoServicosAdicionados) orcamentoServicosAdicionados.scrollIntoView({ behavior: 'smooth', block: 'end' });
             };
 
             /** Updates quantity of an existing item in the temporary budget list. */
@@ -2697,6 +2803,7 @@
 
             /** Renders the list of services added to the current new quote. */
             const renderNovoOrcamentoItens = () => { 
+                if (!orcamentoServicosAdicionados) return; // Defensive check
                 if (state.novoOrcamentoItens.length === 0) {
                     orcamentoServicosAdicionados.innerHTML = renderEmptyState('Nenhum serviço adicionado.', 'Selecione um serviço acima e clique no \'+\' para adicionar.');
                     return;
@@ -2727,6 +2834,7 @@
 
             /** Updates the total value of the new quote based on services and discount. */
             const updateOrcamentoTotal = () => { 
+                if (!orcamentoTotalDiv) return; // Defensive check
                 const subtotal = state.novoOrcamentoItens.reduce((a, i) => a + (parseFloat(i.valor_cobrado) * i.quantidade), 0); 
                 const discount = parseFloat(orcamentoDescontoInput.value) || 0; 
                 const total = subtotal * (1 - discount / 100); 
@@ -2739,18 +2847,18 @@
                 
                 const clienteId = orcamentoClienteSelect.value;
                 if (!clienteId) {
-                    orcamentoClienteSelect.setCustomValidity('Selecione um cliente para o orçamento.');
-                    orcamentoClienteSelect.reportValidity();
+                    if (orcamentoClienteSelect) orcamentoClienteSelect.setCustomValidity('Selecione um cliente para o orçamento.');
+                    if (orcamentoClienteSelect) orcamentoClienteSelect.reportValidity();
                     showNotification('Por favor, selecione um cliente para o orçamento.', 'warning');
                     return;
                 } else {
-                    orcamentoClienteSelect.setCustomValidity('');
+                    if (orcamentoClienteSelect) orcamentoClienteSelect.setCustomValidity('');
                 }
 
                 if (state.novoOrcamentoItens.length === 0) {
                     showNotification('Adicione ao menos um serviço ao orçamento.', 'warning');
-                    paymentOptionsValidation.style.display = 'block';
-                    setTimeout(() => paymentOptionsValidation.style.display = 'none', 3000);
+                    if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'block';
+                    setTimeout(() => { if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'none'; }, 3000);
                     return;
                 }
 
@@ -2763,11 +2871,11 @@
 
                 if (!formasPagamento) {
                     showNotification('Selecione ao menos uma forma de pagamento.', 'warning');
-                    paymentOptionsValidation.style.display = 'block';
-                    setTimeout(() => paymentOptionsValidation.style.display = 'none', 3000);
+                    if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'block';
+                    setTimeout(() => { if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'none'; }, 3000);
                     return;
                 } else {
-                    paymentOptionsValidation.style.display = 'none';
+                    if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'none';
                 }
 
                 try {
@@ -2831,18 +2939,18 @@
             /** Resets the new quote form. */
             const resetOrcamentoForm = () => { 
                 state.editandoOrcamentoId = null;
-                orcamentoForm.reset(); 
+                if (orcamentoForm) orcamentoForm.reset(); 
                 state.novoOrcamentoItens = []; 
                 renderNovoOrcamentoItens(); 
                 updateOrcamentoTotal(); 
                 $$('.payment-option').forEach(b => b.classList.remove('active')); 
-                orcamentoClienteSelect.value = ''; 
-                orcamentoClienteSelect.setCustomValidity(''); 
-                paymentOptionsValidation.style.display = 'none';
-                orcamentoFormTitle.innerHTML = 'Criar Novo Orçamento <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>';
-                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Salvar Orçamento';
-                cancelarEdicaoOrcamentoBtn.style.display = 'none';
-                orcamentoServicoQuantidadeInput.value = '1'; 
+                if (orcamentoClienteSelect) orcamentoClienteSelect.value = ''; 
+                if (orcamentoClienteSelect) orcamentoClienteSelect.setCustomValidity(''); 
+                if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'none';
+                if (orcamentoFormTitle) orcamentoFormTitle.innerHTML = 'Criar Novo Orçamento <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>';
+                if (submitOrcamentoBtn) submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Salvar Orçamento';
+                if (cancelarEdicaoOrcamentoBtn) cancelarEdicaoOrcamentoBtn.style.display = 'none';
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.value = '1'; 
             };
             
             // ===================================================================================
@@ -2873,11 +2981,11 @@
                 });
 
                 if (filtered.length === 0) {
-                    historicoLista.innerHTML = renderEmptyState('Nenhum histórico encontrado.', 'Ajuste os filtros de busca ou crie um novo orçamento.');
+                    if (historicoLista) historicoLista.innerHTML = renderEmptyState('Nenhum histórico encontrado.', 'Ajuste os filtros de busca ou crie um novo orçamento.');
                     return;
                 }
 
-                historicoLista.innerHTML = filtered.map(o => `
+                if (historicoLista) historicoLista.innerHTML = filtered.map(o => `
                     <li data-id="${o.id}" class="data-list-item ${o.id === state.orcamentoSelecionado?.id ? 'selected' : ''}" role="listitem" tabindex="0">
                         <div>
                             <strong>${o.clientes?.nome || 'Cliente Removido'}</strong><br>
@@ -2922,7 +3030,7 @@
                 } catch (error) {
                     console.error('Erro ao buscar detalhes do orçamento:', error);
                     state.orcamentoSelecionado = null; // Clear selection if error occurs
-                    detalhesContainer.style.display = 'none'; // Hide details panel
+                    if (detalhesContainer) detalhesContainer.style.display = 'none'; // Hide details panel
                     showNotification(`Erro ao buscar detalhes: ${error.message}`, 'error'); 
                 }
             };
@@ -2930,29 +3038,34 @@
             /** Displays the details of the selected quote in the details panel. */
             const displayOrcamentoDetails = () => {
                 if (!state.orcamentoSelecionado) { 
-                    detalhesContainer.style.display = 'none'; 
+                    if (detalhesContainer) detalhesContainer.style.display = 'none'; 
                     return; 
                 }
                 const orc = state.orcamentoSelecionado;
                 const { status } = orc;
 
-                $('#detalhes-orcamento-texto').textContent = generateOrcamentoText(orc);
+                if ($('#detalhes-orcamento-texto')) $('#detalhes-orcamento-texto').textContent = generateOrcamentoText(orc);
                 
-                $('#btn-edit-orcamento').style.display = status !== 'Cancelado' ? 'inline-flex' : 'none'; 
-                $('#btn-aprovar').style.display = status === 'Orçamento' ? 'inline-flex' : 'none';
-                $('#btn-finalizar').style.display = status === 'Aprovado' ? 'inline-flex' : 'none';
-                $('#btn-cancelar').style.display = (status === 'Orçamento' || status === 'Aprovado') ? 'inline-flex' : 'none';
+                const btnEditOrcamento = $('#btn-edit-orcamento');
+                const btnAprovar = $('#btn-aprovar');
+                const btnFinalizar = $('#btn-finalizar');
+                const btnCancelar = $('#btn-cancelar');
+
+                if (btnEditOrcamento) btnEditOrcamento.style.display = status !== 'Cancelado' ? 'inline-flex' : 'none'; 
+                if (btnAprovar) btnAprovar.style.display = status === 'Orçamento' ? 'inline-flex' : 'none';
+                if (btnFinalizar) btnFinalizar.style.display = status === 'Aprovado' ? 'inline-flex' : 'none';
+                if (btnCancelar) btnCancelar.style.display = (status === 'Orçamento' || status === 'Aprovado') ? 'inline-flex' : 'none';
                 
                 const reciboBtn = $('#btn-view-recibo');
                 if (status === 'Finalizado') {
-                    $('#detalhes-recibo-texto').textContent = generateReciboText(orc);
-                    reciboBtn.style.display = 'inline-flex';
+                    if ($('#detalhes-recibo-texto')) $('#detalhes-recibo-texto').textContent = generateReciboText(orc);
+                    if (reciboBtn) reciboBtn.style.display = 'inline-flex';
                 } else {
-                    reciboBtn.style.display = 'none';
+                    if (reciboBtn) reciboBtn.style.display = 'none';
                     switchDetailView('orcamento');
                 }
-                detalhesContainer.style.display = 'block';
-                detalhesContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (detalhesContainer) detalhesContainer.style.display = 'block';
+                if (detalhesContainer) detalhesContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
 
             /**
@@ -2960,27 +3073,26 @@
              * @param {'orcamento' | 'recibo'} view - The view to activate.
              */
             const switchDetailView = (view) => {
-                if (view === 'orcamento') {
-                    $('#detalhe-orcamento-bloco').style.display = 'block';
-                    $('#detalhe-recibo-bloco').style.display = 'none';
-                    $('#btn-view-orcamento').classList.add('active');
-                    $('#btn-view-recibo').classList.remove('active');
-                } else {
-                    $('#detalhe-orcamento-bloco').style.display = 'none';
-                    $('#detalhe-recibo-bloco').style.display = 'block';
-                    $('#btn-view-orcamento').classList.remove('active');
-                    $('#btn-view-recibo').classList.add('active');
-                }
+                const detalheOrcamentoBloco = $('#detalhe-orcamento-bloco');
+                const detalheReciboBloco = $('#detalhe-recibo-bloco');
+                const btnViewOrcamento = $('#btn-view-orcamento');
+                const btnViewRecibo = $('#btn-view-recibo');
+
+                if (detalheOrcamentoBloco) detalheOrcamentoBloco.style.display = (view === 'orcamento' ? 'block' : 'none');
+                if (detalheReciboBloco) detalheReciboBloco.style.display = (view === 'recibo' ? 'block' : 'none');
+                
+                if (btnViewOrcamento) btnViewOrcamento.classList.toggle('active', view === 'orcamento');
+                if (btnViewRecibo) btnViewRecibo.classList.toggle('active', view === 'recibo');
             };
 
             /** Populates the New Orcamento form with data from an existing budget for editing. */
             const populateOrcamentoFormForEdit = (orc) => {
                 state.editandoOrcamentoId = orc.id;
-                orcamentoIdToEditInput.value = orc.id; 
+                if (orcamentoIdToEditInput) orcamentoIdToEditInput.value = orc.id; 
 
-                orcamentoFormTitle.innerHTML = 'Editar Orçamento <i class="fas fa-edit" aria-hidden="true"></i>';
-                orcamentoClienteSelect.value = orc.cliente_id;
-                orcamentoDescontoInput.value = orc.desconto || 0;
+                if (orcamentoFormTitle) orcamentoFormTitle.innerHTML = 'Editar Orçamento <i class="fas fa-edit" aria-hidden="true"></i>';
+                if (orcamentoClienteSelect) orcamentoClienteSelect.value = orc.cliente_id;
+                if (orcamentoDescontoInput) orcamentoDescontoInput.value = orc.desconto || 0;
 
                 $$('.payment-option').forEach(btn => btn.classList.remove('active'));
                 if (orc.formas_pagamento) {
@@ -3001,8 +3113,8 @@
                 renderNovoOrcamentoItens();
                 updateOrcamentoTotal();
 
-                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Atualizar Orçamento';
-                cancelarEdicaoOrcamentoBtn.style.display = 'inline-flex';
+                if (submitOrcamentoBtn) submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Atualizar Orçamento';
+                if (cancelarEdicaoOrcamentoBtn) cancelarEdicaoOrcamentoBtn.style.display = 'inline-flex';
             };
 
             /** Initiates the edit process for a selected quote. */
@@ -3013,7 +3125,7 @@
                 }
                 populateOrcamentoFormForEdit(state.orcamentoSelecionado);
                 showTab('novo-orcamento'); 
-                orcamentoFormTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (orcamentoFormTitle) orcamentoFormTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
 
 
@@ -3326,7 +3438,7 @@
                         updateDashboard();
                     }
                 }));
-                syncBtn.addEventListener('click', () => fetchAllData(true)); 
+                if (syncBtn) syncBtn.addEventListener('click', () => fetchAllData(true)); 
 
                 // Dashboard stat cards event listeners
                 $$('.dashboard-grid .stat-card').forEach(card => {
@@ -3337,21 +3449,21 @@
                         
                         if (targetTab === 'clientes') {
                             showTab('clientes');
-                            searchClienteInput.value = ''; // Clear search for clients tab
+                            if (searchClienteInput) searchClienteInput.value = ''; // Added null check
                             renderClientes();
                         } else if (targetTab === 'historico') {
                             showTab('historico', { status: filterValue }); // Pass status to filter
-                            searchHistoricoInput.value = ''; // Clear search for history tab
-                            filterStartDateInput.value = ''; // Clear date filters
-                            filterEndDateInput.value = '';
+                            if (searchHistoricoInput) searchHistoricoInput.value = ''; // Added null check
+                            if (filterStartDateInput) filterStartDateInput.value = ''; // Added null check
+                            if (filterEndDateInput) filterEndDateInput.value = ''; // Added null check
                         }
                     });
                 });
 
                 // Clients tab event listeners
-                clienteForm.addEventListener('submit', handleClienteSubmit);
-                $('#cancelar-edicao-cliente').addEventListener('click', resetClienteForm);
-                clientesLista.addEventListener('click', (e) => { 
+                if (clienteForm) clienteForm.addEventListener('submit', handleClienteSubmit);
+                if ($('#cancelar-edicao-cliente')) $('#cancelar-edicao-cliente').addEventListener('click', resetClienteForm);
+                if (clientesLista) clientesLista.addEventListener('click', (e) => { 
                     const listItem = e.target.closest('li[data-id]');
                     if (!listItem) return;
                     const id = listItem.dataset.id;
@@ -3363,14 +3475,14 @@
                         displayClientDetails(id);
                     }
                 });
-                searchClienteInput.addEventListener('input', debouncedRenderClientes);
-                sortClientesSelect.addEventListener('change', debouncedRenderClientes); // Added sorting event
-                clienteNomeInput.addEventListener('input', () => handleValidationIcon(clienteNomeInput));
-                clienteTelefoneInput.addEventListener('input', (e) => { 
+                if (searchClienteInput) searchClienteInput.addEventListener('input', debouncedRenderClientes);
+                if (sortClientesSelect) sortClientesSelect.addEventListener('change', debouncedRenderClientes); // Added sorting event
+                if (clienteNomeInput) clienteNomeInput.addEventListener('input', () => handleValidationIcon(clienteNomeInput));
+                if (clienteTelefoneInput) clienteTelefoneInput.addEventListener('input', (e) => { 
                     e.target.value = formatPhone(e.target.value); 
                     handleValidationIcon(e.target);
                 });
-                clientePlacaInput.addEventListener('input', (e) => {
+                if (clientePlacaInput) clientePlacaInput.addEventListener('input', (e) => {
                     // Remove any non-alphanumeric chars first, then convert to uppercase
                     let val = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase(); 
                     if (val.length > 7) val = val.slice(0, 7); // Max 7 chars (Mercosul or old format)
@@ -3387,12 +3499,12 @@
                     handleValidationIcon(e.target);
                 });
 
-                $('#export-clientes-csv').addEventListener('click', () => exportToCsv(state.clientes, 'clientes.csv'));
+                if ($('#export-clientes-csv')) $('#export-clientes-csv').addEventListener('click', () => exportToCsv(state.clientes, 'clientes.csv'));
 
                 // Services tab event listeners
-                servicoForm.addEventListener('submit', handleServicoSubmit);
-                $('#cancelar-edicao-servico').addEventListener('click', resetServicoForm);
-                servicosLista.addEventListener('click', (e) => { 
+                if (servicoForm) servicoForm.addEventListener('submit', handleServicoSubmit);
+                if ($('#cancelar-edicao-servico')) $('#cancelar-edicao-servico').addEventListener('click', resetServicoForm);
+                if (servicosLista) servicosLista.addEventListener('click', (e) => { 
                     const listItem = e.target.closest('li[data-id]');
                     if (!listItem) return;
                     const id = listItem.dataset.id;
@@ -3401,99 +3513,103 @@
                     else if (e.target.closest('.save-inline-edit-servico-btn')) handleSaveInlineEditServico(id, listItem);
                     else if (e.target.closest('.cancel-inline-edit-servico-btn')) handleCancelInlineEditServico(id, listItem);
                 });
-                searchServicoInput.addEventListener('input', debouncedRenderServicos);
-                sortServicosSelect.addEventListener('change', debouncedRenderServicos); // Added sorting event
-                servicoDescricaoInput.addEventListener('input', () => handleValidationIcon(servicoDescricaoInput));
-                servicoValorInput.addEventListener('input', () => handleValidationIcon(servicoValorInput));
-                $('#export-servicos-csv').addEventListener('click', () => exportToCsv(state.servicos, 'servicos.csv'));
+                if (searchServicoInput) searchServicoInput.addEventListener('input', debouncedRenderServicos);
+                if (sortServicosSelect) sortServicosSelect.addEventListener('change', debouncedRenderServicos); // Added sorting event
+                if (servicoDescricaoInput) servicoDescricaoInput.addEventListener('input', () => handleValidationIcon(servicoDescricaoInput));
+                if (servicoValorInput) servicoValorInput.addEventListener('input', () => handleValidationIcon(servicoValorInput));
+                if ($('#export-servicos-csv')) $('#export-servicos-csv').addEventListener('click', () => exportToCsv(state.servicos, 'servicos.csv'));
 
                 // New Orcamento tab event listeners
-                addServicoBtn.addEventListener('click', handleAddServicoToOrcamento);
-                orcamentoServicosAdicionados.addEventListener('click', (e) => { 
+                if (addServicoBtn) addServicoBtn.addEventListener('click', handleAddServicoToOrcamento);
+                if (orcamentoServicosAdicionados) orcamentoServicosAdicionados.addEventListener('click', (e) => { 
                     if (e.target.classList.contains('remove-servico-btn')) {
                         handleRemoveServicoFromOrcamento(e.target.dataset.index); 
                     }
                 });
-                orcamentoDescontoInput.addEventListener('input', updateOrcamentoTotal);
-                orcamentoForm.addEventListener('submit', handleOrcamentoSubmit);
-                paymentOptionsContainer.addEventListener('click', (e) => { 
+                if (orcamentoDescontoInput) orcamentoDescontoInput.addEventListener('input', updateOrcamentoTotal);
+                if (orcamentoForm) orcamentoForm.addEventListener('submit', handleOrcamentoSubmit);
+                if (paymentOptionsContainer) paymentOptionsContainer.addEventListener('click', (e) => { 
                     if (e.target.classList.contains('payment-option')) {
                         e.target.classList.toggle('active'); 
                         // If at least one is active, hide validation message
                         if (Array.from($$('.payment-option.active')).length > 0) {
-                            paymentOptionsValidation.style.display = 'none'; 
+                            if (paymentOptionsValidation) paymentOptionsValidation.style.display = 'none'; 
                         }
                     }
                 });
-                cancelarEdicaoOrcamentoBtn.addEventListener('click', resetOrcamentoForm);
+                if (cancelarEdicaoOrcamentoBtn) cancelarEdicaoOrcamentoBtn.addEventListener('click', resetOrcamentoForm);
 
 
-                // Historico tab event listeners
-                historicoLista.addEventListener('click', (e) => { 
+                // Histórico tab event listeners
+                if (historicoLista) historicoLista.addEventListener('click', (e) => { 
                     const li = e.target.closest('li[data-id]'); 
                     if (li?.dataset.id) handleHistoricoClick(li.dataset.id); 
                 });
-                recentActivityList.addEventListener('click', (e) => { 
+                if (recentActivityList) recentActivityList.addEventListener('click', (e) => { 
                     const li = e.target.closest('li[data-id]'); 
                     if(li) { 
                         showTab('historico'); 
                         setTimeout(() => handleHistoricoClick(li.dataset.id), 50); 
                     }
                 });
-                searchHistoricoInput.addEventListener('input', debouncedRenderOrcamentos);
-                filterStatusSelect.addEventListener('change', renderOrcamentos);
-                filterStartDateInput.addEventListener('change', renderOrcamentos);
-                filterEndDateInput.addEventListener('change', renderOrcamentos);
-                clearFiltersBtn.addEventListener('click', () => {
-                    searchHistoricoInput.value = '';
-                    filterStatusSelect.value = '';
-                    filterStartDateInput.value = '';
-                    filterEndDateInput.value = '';
+                if (searchHistoricoInput) searchHistoricoInput.addEventListener('input', debouncedRenderOrcamentos);
+                if (filterStatusSelect) filterStatusSelect.addEventListener('change', renderOrcamentos);
+                if (filterStartDateInput) filterStartDateInput.addEventListener('change', renderOrcamentos);
+                if (filterEndDateInput) filterEndDateInput.addEventListener('change', renderOrcamentos);
+                if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => {
+                    if (searchHistoricoInput) searchHistoricoInput.value = '';
+                    if (filterStatusSelect) filterStatusSelect.value = '';
+                    if (filterStartDateInput) filterStartDateInput.value = '';
+                    if (filterEndDateInput) filterEndDateInput.value = '';
                     renderOrcamentos();
                 });
                 
                 // Orcamento details actions
-                $('#btn-edit-orcamento').addEventListener('click', handleEditOrcamento);
-                $('#btn-aprovar').addEventListener('click', () => updateStatusOrcamento('Aprovado'));
-                $('#btn-finalizar').addEventListener('click', () => updateStatusOrcamento('Finalizado'));
-                $('#btn-cancelar').addEventListener('click', () => updateStatusOrcamento('Cancelado'));
-                $('#btn-excluir-orcamento').addEventListener('click', handleDeleteOrcamento);
+                if ($('#btn-edit-orcamento')) $('#btn-edit-orcamento').addEventListener('click', handleEditOrcamento);
+                if ($('#btn-aprovar')) $('#btn-aprovar').addEventListener('click', () => updateStatusOrcamento('Aprovado'));
+                if ($('#btn-finalizar')) $('#btn-finalizar').addEventListener('click', () => updateStatusOrcamento('Finalizado'));
+                if ($('#btn-cancelar')) $('#btn-cancelar').addEventListener('click', () => updateStatusOrcamento('Cancelado'));
+                if ($('#btn-excluir-orcamento')) $('#btn-excluir-orcamento').addEventListener('click', handleDeleteOrcamento);
                 
-                $('#btn-view-orcamento').addEventListener('click', () => switchDetailView('orcamento'));
-                $('#btn-view-recibo').addEventListener('click', () => switchDetailView('recibo'));
+                if ($('#btn-view-orcamento')) $('#btn-view-orcamento').addEventListener('click', () => switchDetailView('orcamento'));
+                if ($('#btn-view-recibo')) $('#btn-view-recibo').addEventListener('click', () => switchDetailView('recibo'));
 
-                $('#btn-copiar-orcamento').addEventListener('click', () => copyAndNotify(generateOrcamentoText, 'Orçamento'));
-                $('#btn-whatsapp-orcamento').addEventListener('click', () => sendWhatsApp(generateOrcamentoText));
-                $('#btn-copiar-recibo').addEventListener('click', () => copyAndNotify(generateReciboText, 'Recibo'));
-                $('#btn-whatsapp-recibo').addEventListener('click', () => sendWhatsApp(generateReciboText));
+                if ($('#btn-copiar-orcamento')) $('#btn-copiar-orcamento').addEventListener('click', () => copyAndNotify(generateOrcamentoText, 'Orçamento'));
+                if ($('#btn-whatsapp-orcamento')) $('#btn-whatsapp-orcamento').addEventListener('click', () => sendWhatsApp(generateOrcamentoText));
+                if ($('#btn-copiar-recibo')) $('#btn-copiar-recibo').addEventListener('click', () => copyAndNotify(generateReciboText, 'Recibo'));
+                if ($('#btn-whatsapp-recibo')) $('#btn-whatsapp-recibo').addEventListener('click', () => sendWhatsApp(generateReciboText));
                 
                 // PDF Download buttons
-                $('#btn-download-orcamento-pdf').addEventListener('click', () => generatePdf('orcamento'));
-                $('#btn-download-recibo-pdf').addEventListener('click', () => generatePdf('recibo'));
+                if ($('#btn-download-orcamento-pdf')) $('#btn-download-orcamento-pdf').addEventListener('click', () => generatePdf('orcamento'));
+                if ($('#btn-download-recibo-pdf')) $('#btn-download-recibo-pdf').addEventListener('click', () => generatePdf('recibo'));
 
                 // Close client details panel
-                closeClientDetailsBtn.addEventListener('click', () => {
-                    clientDetailsPanel.style.display = 'none';
-                });
+                if (closeClientDetailsBtn) { // Defensive check
+                    closeClientDetailsBtn.addEventListener('click', () => {
+                        if (clientDetailsPanel) clientDetailsPanel.style.display = 'none';
+                    });
+                }
 
                 // Global modal confirm/cancel
-                modalCancelBtn.addEventListener('click', hideConfirmModal);
-                modalConfirmBtn.addEventListener('click', () => { 
+                if (modalCancelBtn) modalCancelBtn.addEventListener('click', hideConfirmModal);
+                if (modalConfirmBtn) modalConfirmBtn.addEventListener('click', () => { 
                     if (typeof onConfirmCallback === 'function') onConfirmCallback(); 
                     hideConfirmModal(); 
                 });
                 
                 // Back to Top Button Logic
-                window.addEventListener('scroll', () => {
-                    if (window.scrollY > 400) { 
-                        backToTopBtn.classList.add('show');
-                    } else {
-                        backToTopBtn.classList.remove('show');
-                    }
-                });
-                backToTopBtn.addEventListener('click', () => { 
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
+                if (backToTopBtn) { // Added null check
+                    window.addEventListener('scroll', () => {
+                        if (window.scrollY > 400) { 
+                            backToTopBtn.classList.add('show');
+                        } else {
+                            backToTopBtn.classList.remove('show');
+                        }
+                    });
+                    backToTopBtn.addEventListener('click', () => { 
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                }
                 
                 // Initial load: show dashboard, setup listeners, and fetch all data
                 showTab('dashboard');
