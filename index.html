@@ -1,0 +1,2819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R.M. Estética Automotiva - Gestor PRO+</title>
+    
+    <!-- Google Fonts: Poppins for headings, Inter for body -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Importa o cliente Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Estilos CSS -->
+    <style>
+        :root {
+            --bg-dark: #0f172a; /* Darker blue-gray */
+            --bg-card: #1e293b; /* Slightly lighter for cards */
+            --bg-input: #334155; /* Even lighter for inputs */
+            --text-light: #e2e8f0; /* Off-white for main text */
+            --text-muted: #94a3b8; /* Muted gray for labels/small text */
+            --primary-red: #ef4444; /* Modern, vibrant red */
+            --primary-red-dark: #dc2626; /* Darker red on hover */
+            --accent-green: #22c55e; /* Green for success */
+            --accent-green-dark: #16a34a;
+            --accent-blue: #3b82f6; /* Blue for info/active */
+            --accent-blue-dark: #2563eb;
+            --accent-orange: #f97316; /* Orange for warning */
+            --accent-orange-dark: #ea580c;
+            --accent-red-status: #ef4444; /* Red for cancellation/danger */
+            --border-color: #475569; /* Subtle border */
+            --shadow-color: rgba(0, 0, 0, 0.3); /* Deeper shadow */
+            --header-border: #64748b; /* Lighter border for header */
+
+            /* Skeleton loading colors */
+            --skeleton-base: #334155;
+            --skeleton-highlight: #475569;
+        }
+
+        /* Base styles, resets, and typography */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        html { 
+            scroll-behavior: smooth; 
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 16px;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-light);
+        }
+
+        /* Main application container */
+        .app-container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+
+        /* Header styling */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--header-border);
+            padding-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 { 
+            color: var(--primary-red); 
+            font-size: 2rem; 
+            font-weight: 700; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        header h1 i {
+            color: var(--accent-blue);
+        }
+
+        /* Navigation styling */
+        nav { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            margin-bottom: 30px;
+        }
+        .nav-btn {
+            padding: 12px 20px;
+            background-color: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            flex-grow: 1; /* Makes buttons take up space on smaller screens */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+        @media (min-width: 600px) {
+            .nav-btn { flex-grow: 0; } /* Reverts on larger screens */
+        }
+
+        .nav-btn:hover { 
+            background-color: var(--bg-input); 
+            color: var(--text-light);
+            border-color: var(--primary-red); 
+        }
+        .nav-btn.active { 
+            background-color: var(--primary-red); 
+            color: white; 
+            font-weight: bold; 
+            border-color: var(--primary-red); 
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* Sync button styling */
+        .sync-btn {
+            background: none; 
+            border: none; 
+            color: var(--text-muted); 
+            cursor: pointer;
+            font-size: 2.2rem; 
+            transition: color 0.3s, transform 0.3s;
+            padding: 5px; /* Increase tap area */
+        }
+        .sync-btn:hover {
+            color: var(--primary-red);
+            transform: rotate(15deg);
+        }
+        .sync-btn.syncing { 
+            animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite; 
+            color: var(--accent-blue);
+        }
+        @keyframes spin { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
+        }
+
+        /* Tab content animations */
+        .tab-content { 
+            display: none; 
+            animation: fadeInScale 0.6s ease-out; 
+            transform-origin: top;
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+
+        @keyframes fadeInScale { 
+            from { opacity: 0; transform: translateY(20px) scale(0.98); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        
+        /* Grid layouts for different sections */
+        .grid-layout, .historico-layout, .dashboard-main-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 25px; 
+        }
+        @media (min-width: 768px) { 
+            .grid-layout { grid-template-columns: 1fr 1.5fr; } 
+            .dashboard-main-grid { grid-template-columns: 1.8fr 1fr; } /* Adjust dashboard grid for chart */
+        }
+        @media (min-width: 992px) {
+            .historico-layout { grid-template-columns: 1fr 1.5fr; }
+        }
+
+        /* Card styling */
+        .card { 
+            background-color: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 15px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        .card h2 {
+            margin-top: 0; 
+            margin-bottom: 25px; 
+            color: var(--primary-red);
+            border-bottom: 2px solid var(--primary-red); 
+            padding-bottom: 12px; 
+            font-size: 1.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Form elements styling */
+        .form-group { 
+            margin-bottom: 20px; 
+            position: relative;
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: var(--text-muted); 
+            font-size: 0.95rem; 
+            font-weight: 500;
+        }
+        
+        .search-container { 
+            position: relative; 
+            margin-bottom: 25px; 
+        }
+        .search-container input { 
+            padding-left: 45px; /* Space for icon */
+        }
+        .search-container i.fa-search { 
+            position: absolute; 
+            left: 15px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: var(--text-muted); 
+            font-size: 1.1rem;
+        }
+
+        input, select, textarea {
+            width: 100%; 
+            padding: 15px; 
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color); 
+            border-radius: 10px;
+            color: var(--text-light); 
+            font-size: 1.05rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+        }
+
+        /* Validation feedback */
+        input:invalid:not(:focus):not(:placeholder-shown) {
+            border-color: var(--accent-red-status);
+        }
+        .form-group .validation-message {
+            color: var(--accent-red-status);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none; 
+        }
+        /* Show validation message when input is invalid and touched */
+        input:invalid:not(:focus):not(:placeholder-shown) + .validation-message {
+            display: block;
+        }
+        /* Validation icons */
+        .form-group .validation-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%; 
+            transform: translateY(20%); 
+            font-size: 1.1rem;
+        }
+        .form-group input:not(:placeholder-shown):valid + .validation-message + .validation-icon {
+            color: var(--accent-green);
+        }
+        .form-group input:invalid:not(:focus):not(:placeholder-shown) + .validation-message + .validation-icon {
+            color: var(--accent-red-status);
+        }
+        .form-group input:not(:required):not(:focus) + .validation-message + .validation-icon,
+        .form-group input:focus + .validation-message + .validation-icon,
+        .form-group input:placeholder-shown + .validation-message + .validation-icon {
+             display: none; 
+        }
+        .form-group select + .validation-message + .validation-icon {
+            top: 60%;
+        }
+
+
+        /* Button styling */
+        .btn {
+            display: inline-flex; 
+            align-items: center;
+            justify-content: center;
+            gap: 8px; 
+            padding: 14px 25px; 
+            border: none; 
+            border-radius: 10px;
+            cursor: pointer; 
+            font-weight: 600; 
+            text-transform: uppercase;
+            font-size: 0.95rem; 
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            width: 100%; 
+            text-align: center; 
+            margin-top: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+        @media(min-width: 992px) { 
+            .btn { width: auto; } 
+        }
+        
+        .btn:active { 
+            transform: translateY(1px); 
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .btn-primary { 
+            background-color: var(--primary-red); 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background-color: var(--primary-red-dark); 
+            box-shadow: 0 5px 12px rgba(239, 68, 68, 0.4);
+        }
+        .btn-secondary { 
+            background-color: #475569; 
+            color: var(--text-light); 
+        }
+        .btn-secondary:hover { 
+            background-color: #64748b; 
+        }
+        .btn-danger { 
+            background-color: var(--accent-red-status); 
+            color: white; 
+        }
+        .btn-success { 
+            background-color: var(--accent-green); 
+            color: white; 
+        }
+        .btn-success:hover { 
+            background-color: var(--accent-green-dark); 
+        }
+        .btn-sm { 
+            padding: 10px 18px; 
+            font-size: 0.85rem; 
+            width: auto; 
+        }
+
+        /* Data list styling */
+        .data-list ul { 
+            list-style: none; 
+            padding: 0; 
+            max-height: 550px; 
+            overflow-y: auto; 
+            margin-top: 10px;
+        }
+        /* Scrollbar styles */
+        .data-list ul::-webkit-scrollbar {
+            width: 8px;
+        }
+        .data-list ul::-webkit-scrollbar-track {
+            background: var(--bg-input);
+            border-radius: 10px;
+        }
+        .data-list ul::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+        .data-list ul::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Empty state message */
+        .empty-list-message {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-muted);
+            background-color: var(--bg-input);
+            border-radius: 10px;
+            border: 2px dashed var(--border-color);
+            margin-top: 15px;
+        }
+        .empty-list-message p { 
+            font-size: 1.2rem; 
+            margin-bottom: 15px; 
+            font-weight: 500;
+        }
+        .empty-list-message small {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .data-list li {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 18px;
+            background-color: var(--bg-input);
+            border-radius: 10px; 
+            margin-bottom: 12px; 
+            flex-wrap: wrap; 
+            gap: 15px;
+            border-left: 5px solid var(--border-color);
+            transition: border-left-color 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .data-list li:hover { 
+            border-left-color: var(--primary-red); 
+            background-color: #2b3a4e; 
+        }
+        .data-list li.selected {
+            border-left-color: var(--accent-blue);
+            background-color: #2b3a4e;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .data-list li > div:first-child { 
+            flex-grow: 1; 
+        }
+        .data-list li strong {
+            font-size: 1.1rem;
+            color: var(--text-light);
+        }
+        .data-list li small {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .item-actions { 
+            display: flex; 
+            gap: 10px; 
+            flex-shrink: 0; 
+            align-items: center; 
+        }
+
+        /* Quantity input for orcamento items */
+        .orcamento-item-quantity {
+            width: 70px;
+            padding: 8px;
+            margin-left: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            -moz-appearance: textfield; 
+        }
+        .orcamento-item-quantity::-webkit-inner-spin-button,
+        .orcamento-item-quantity::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        /* Orcamento total display */
+        #orcamento-total { 
+            margin-top: 30px; 
+            font-size: 2rem; 
+            font-weight: bold; 
+            color: var(--accent-green); 
+            text-align: center; 
+            padding-top: 20px;
+            border-top: 1px dashed var(--border-color);
+        }
+        
+        /* Payment options grid */
+        .payment-options-group { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+            gap: 10px; 
+        }
+        .payment-option {
+            padding: 14px 15px; 
+            background-color: var(--bg-input); 
+            border: 1px solid var(--border-color);
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            font-size: 0.95rem; 
+            color: var(--text-muted); 
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .payment-option:hover {
+            background-color: var(--border-color);
+            color: var(--text-light);
+        }
+        .payment-option.active {
+            background-color: var(--accent-blue); 
+            color: white; 
+            border-color: var(--accent-blue); 
+            font-weight: bold;
+            box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
+        }
+        
+        #historico-lista li, #recent-activity-list li { 
+            cursor: pointer; 
+            transition: background-color 0.2s, border-left-color 0.2s; 
+        }
+        
+        /* Status indicators */
+        .status-indicator { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            color: white; 
+            font-weight: 600; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-Orçamento { background-color: var(--accent-blue); }
+        .status-Aprovado { background-color: var(--accent-orange); }
+        .status-Finalizado { background-color: var(--accent-green); }
+        .status-Cancelado { background-color: var(--accent-red-status); }
+
+        /* Detail view switcher buttons */
+        .detalhe-view-switcher { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .detalhe-view-btn { 
+            padding: 10px 18px; 
+            background-color: var(--bg-input); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            cursor: pointer; 
+            flex-grow: 1; 
+            text-align: center;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .detalhe-view-btn:hover {
+            background-color: var(--border-color);
+            color: var(--text-light);
+        }
+        .detalhe-view-btn.active { 
+            background-color: var(--primary-red); 
+            color: white; 
+            font-weight: bold; 
+            border-color: var(--primary-red); 
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Detail block styling */
+        .detalhe-bloco {
+            background-color: var(--bg-dark); 
+            border: 1px solid var(--border-color);
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-top: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        .detalhe-bloco h3 { 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            color: var(--primary-red); 
+            font-size: 1.2rem; 
+            font-weight: 600; 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detalhe-bloco pre {
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            color: var(--text-light);
+            font-family: 'Inter', monospace; 
+            font-size: 0.95rem;
+            background-color: var(--bg-input); 
+            padding: 18px; 
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--bg-input);
+        }
+        .detalhe-bloco pre::-webkit-scrollbar { width: 8px; }
+        .detalhe-bloco pre::-webkit-scrollbar-track { background: var(--bg-input); }
+        .detalhe-bloco pre::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .detalhe-bloco pre::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+
+        .detalhe-bloco-actions, .detalhes-status-actions { 
+            margin-top: 20px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            justify-content: flex-start;
+        }
+        .detalhes-status-actions { 
+            padding-top: 20px; 
+            border-top: 1px solid var(--border-color); 
+        }
+        
+        /* Dashboard statistics grid */
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 20px; 
+        }
+        .stat-card { 
+            background-color: var(--bg-card); 
+            border-radius: 12px; 
+            padding: 25px; 
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card .icon { 
+            font-size: 3rem; 
+            margin-bottom: 15px; 
+            color: var(--accent-blue);
+        }
+        .stat-card h3 { 
+            font-size: 0.9rem; 
+            color: var(--text-muted); 
+            margin-bottom: 8px; 
+            text-transform: uppercase; 
+            font-weight: 600;
+            letter-spacing: 0.8px;
+        }
+        .stat-card p { 
+            font-size: 2.2rem; 
+            font-weight: bold; 
+            color: var(--primary-red); 
+            line-height: 1;
+        }
+
+        /* Monthly Stats Chart */
+        .monthly-stats-chart {
+            background-color: var(--bg-input);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 180px; 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .chart-bar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .chart-bar {
+            width: 80%;
+            background-color: var(--accent-green);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.5s ease-out;
+            position: relative;
+        }
+        .chart-bar-value {
+            position: absolute;
+            top: -25px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .chart-bar-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+
+        /* Notification & Modals */
+        #notification {
+            position: fixed; 
+            bottom: 25px; 
+            left: 50%; 
+            transform: translate(-50%, 150%); 
+            padding: 18px 25px; 
+            border-radius: 10px; 
+            color: white; 
+            z-index: 1000;
+            text-align: center; 
+            visibility: hidden; 
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55), visibility 0.6s;
+            max-width: 90%; 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            font-weight: 500;
+            min-width: 280px;
+        }
+        #notification.show { 
+            transform: translate(-50%, 0); 
+            visibility: visible; 
+        }
+        #notification.success { 
+            background-color: var(--accent-green); 
+        }
+        #notification.error { 
+            background-color: var(--accent-red-status); 
+        }
+        #notification.warning {
+            background-color: var(--accent-orange);
+        }
+
+        .modal-overlay {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0,0,0,0.85); 
+            display: none; 
+            justify-content: center;
+            align-items: center; 
+            z-index: 2000; 
+            padding: 20px;
+            backdrop-filter: blur(5px); 
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--bg-card); 
+            padding: 35px; 
+            border-radius: 15px;
+            text-align: center; 
+            max-width: 450px; 
+            width: 100%;
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            animation: slideInUp 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes slideInUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content h3 { 
+            margin-bottom: 20px; 
+            color: var(--primary-red); 
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .modal-content p { 
+            margin-bottom: 30px; 
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+        .modal-actions { 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+        }
+        
+        /* Sync Overlay */
+        #sync-overlay {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0,0,0,0.9); 
+            display: none; 
+            justify-content: center;
+            align-items: center; 
+            z-index: 3000; 
+            color: white; 
+            text-align: center;
+            font-size: 1.3rem; 
+            flex-direction: column; 
+            gap: 25px;
+            backdrop-filter: blur(8px);
+        }
+        #sync-overlay .sync-spinner {
+            font-size: 4rem;
+            animation: spin 1.5s linear infinite;
+            color: var(--accent-blue);
+        }
+        
+        /* Back to Top Button */
+        #back-to-top-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            background-color: var(--primary-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            cursor: pointer;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+        #back-to-top-btn.show {
+            display: flex;
+            opacity: 0.9;
+        }
+        #back-to-top-btn:hover {
+            opacity: 1;
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        #back-to-top-btn i {
+            pointer-events: none; 
+        }
+
+        /* Export Buttons */
+        .export-actions {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        .export-actions .btn-sm {
+            flex-grow: 1;
+        }
+        @media (min-width: 600px) {
+            .export-actions .btn-sm {
+                flex-grow: 0;
+            }
+        }
+
+        /* Offline indicator */
+        #offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--accent-red-status);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: 600;
+            z-index: 3001; 
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            animation: slideDown 0.5s ease-out;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Skeleton Loading Effect */
+        .skeleton-loading {
+            background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px; 
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+        .skeleton-loading-text {
+            height: 1.2em; 
+            margin-bottom: 0.5em;
+        }
+        .skeleton-loading-list-item {
+            height: 60px; 
+            margin-bottom: 12px;
+        }
+        .skeleton-loading-stat-card {
+            height: 120px; 
+            border-radius: 12px;
+        }
+        .skeleton-loading-chart {
+            height: 180px; 
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Confetti Effect */
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: currentColor;
+            opacity: 0;
+            border-radius: 50%;
+            animation: confetti-fall 2s ease-out forwards;
+            z-index: 3000;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--x), var(--y)) rotate(720deg) scale(0.5);
+            }
+        }
+
+        /* History filters */
+        .filter-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-options select, .filter-options input[type="date"] {
+            flex-grow: 1;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="offline-indicator">Você está offline. Conecte-se para sincronizar os dados.</div>
+
+    <div class="app-container">
+        <header>
+            <h1><i class="fas fa-car-wash"></i> R.M. Estética PRO+</h1>
+            <button class="sync-btn" id="sync-btn" title="Sincronizar Dados Manualmente"><i class="fas fa-sync-alt"></i></button>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-tab="dashboard"><i class="fas fa-chart-line"></i> Painel</button>
+            <button class="nav-btn" data-tab="clientes"><i class="fas fa-users"></i> Clientes</button>
+            <button class="nav-btn" data-tab="servicos"><i class="fas fa-tools"></i> Serviços</button>
+            <button class="nav-btn" data-tab="novo-orcamento"><i class="fas fa-file-invoice"></i> Orçamento</button>
+            <button class="nav-btn" data-tab="historico"><i class="fas fa-history"></i> Histórico</button>
+        </nav>
+
+        <main>
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="dashboard-main-grid">
+                    <div class="card">
+                        <h2>Visão Geral <i class="fas fa-tachometer-alt"></i></h2>
+                        <div class="dashboard-grid" id="dashboard-stats-container">
+                            <!-- Stat cards will be loaded here or replaced by skeleton loaders -->
+                        </div>
+                        <div class="monthly-stats-chart">
+                            <h3>Serviços Finalizados por Mês <i class="fas fa-chart-bar"></i></h3>
+                            <div id="monthly-finalized-chart" class="chart-bars">
+                                <!-- Chart bars will be rendered here by JS or skeleton -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card data-list">
+                        <h2>Atividade Recente <i class="fas fa-bolt"></i></h2>
+                        <ul id="recent-activity-list">
+                            <!-- Recent activity items or skeleton loaders -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="clientes-tab" class="tab-content">
+                 <div class="grid-layout">
+                    <div class="card">
+                        <h2 id="cliente-form-title">Novo Cliente <i class="fas fa-user-plus"></i></h2>
+                        <form id="cliente-form">
+                            <input type="hidden" id="cliente-id">
+                            <div class="form-group">
+                                <label for="cliente-nome">Nome Completo</label>
+                                <input type="text" id="cliente-nome" required>
+                                <span class="validation-message">O nome do cliente é obrigatório.</span>
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente-telefone">Telefone (WhatsApp)</label>
+                                <input type="tel" id="cliente-telefone" placeholder="(XX) XXXXX-XXXX">
+                                <span class="validation-message">Formato de telefone inválido. Ex: (XX) XXXXX-XXXX</span>
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente-carro">Veículo</label>
+                                <input type="text" id="cliente-carro" placeholder="Ex: Honda Civic, Chevrolet Onix">
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente-placa">Placa</label>
+                                <input type="text" id="cliente-placa" placeholder="Ex: ABC-1234 (antiga) ou ABC1D23 (Mercosul)">
+                                <span class="validation-message">Formato de placa inválido.</span>
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                            <button type="button" id="cancelar-edicao-cliente" class="btn btn-secondary" style="display: none;"><i class="fas fa-times-circle"></i> Cancelar</button>
+                        </form>
+                    </div>
+                    <div class="card data-list">
+                        <h2>Clientes Cadastrados <i class="fas fa-users"></i></h2>
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="search-cliente" placeholder="Buscar cliente por nome ou placa...">
+                        </div>
+                        <ul id="clientes-lista">
+                            <!-- Client list items or skeleton loaders -->
+                        </ul>
+                        <div class="export-actions">
+                            <button id="export-clientes-csv" class="btn btn-sm btn-secondary"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="servicos-tab" class="tab-content">
+                 <div class="grid-layout">
+                    <div class="card">
+                        <h2 id="servico-form-title">Novo Serviço <i class="fas fa-clipboard-list"></i></h2>
+                        <form id="servico-form">
+                            <input type="hidden" id="servico-id">
+                            <div class="form-group">
+                                <label for="servico-descricao">Descrição</label>
+                                <input type="text" id="servico-descricao" required placeholder="Ex: Polimento Técnico, Lavagem Detalhada">
+                                <span class="validation-message">A descrição do serviço é obrigatória.</span>
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <div class="form-group">
+                                <label for="servico-valor">Valor (R$)</label>
+                                <input type="number" id="servico-valor" step="0.01" required min="0.01" placeholder="Ex: 150.00">
+                                <span class="validation-message">O valor do serviço deve ser um número positivo.</span>
+                                <i class="validation-icon fas"></i>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                            <button type="button" id="cancelar-edicao-servico" class="btn btn-secondary" style="display: none;"><i class="fas fa-times-circle"></i> Cancelar</button>
+                        </form>
+                    </div>
+                     <div class="card data-list">
+                        <h2>Serviços Cadastrados <i class="fas fa-tools"></i></h2>
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="search-servico" placeholder="Buscar serviço por descrição...">
+                        </div>
+                        <ul id="servicos-lista">
+                            <!-- Service list items or skeleton loaders -->
+                        </ul>
+                         <div class="export-actions">
+                            <button id="export-servicos-csv" class="btn btn-sm btn-secondary"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="novo-orcamento-tab" class="tab-content">
+                <div class="card">
+                    <h2 id="orcamento-form-title">Criar Novo Orçamento <i class="fas fa-file-invoice-dollar"></i></h2>
+                    <form id="orcamento-form">
+                        <input type="hidden" id="orcamento-id-to-edit">
+                        <div class="form-group">
+                            <label for="orcamento-cliente">Cliente</label>
+                            <select id="orcamento-cliente" required>
+                                <option value="">Carregando clientes...</option>
+                            </select>
+                            <span class="validation-message">Selecione um cliente.</span>
+                            <i class="validation-icon fas"></i>
+                        </div>
+                        <div class="form-group">
+                            <label for="orcamento-servico-select">Adicionar Serviço</label>
+                            <div style="display: flex; gap: 10px;">
+                                <select id="orcamento-servico-select" style="flex-grow: 1;">
+                                    <option value="">Carregando serviços...</option>
+                                </select>
+                                <input type="number" id="orcamento-servico-quantidade" min="1" value="1" style="width: 80px; text-align: center;">
+                                <button type="button" id="add-servico-btn" class="btn btn-primary btn-sm" style="width: 50px;" disabled><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <h3>Serviços Adicionados <i class="fas fa-list-ul"></i></h3>
+                        <div class="data-list">
+                            <ul id="orcamento-servicos-adicionados" style="min-height: 80px;">
+                                <div class="empty-list-message" style="border: none; background: transparent; padding: 20px 0;">
+                                    <p style="font-size: 1rem;"><i class="fas fa-info-circle"></i> Nenhum serviço adicionado.</p>
+                                    <small>Selecione um serviço acima e clique no '+' para adicionar.</small>
+                                </div>
+                            </ul>
+                        </div>
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label for="orcamento-desconto">Desconto (%)</label>
+                            <input type="number" id="orcamento-desconto" value="0" min="0" max="100" placeholder="0-100">
+                        </div>
+                        <div class="form-group">
+                            <label>Formas de Pagamento</label>
+                            <div class="payment-options-group" id="payment-options">
+                                <button type="button" class="payment-option" data-value="Pix">Pix</button>
+                                <button type="button" class="payment-option" data-value="Dinheiro">Dinheiro</button>
+                                <button type="button" class="payment-option" data-value="Crédito">Crédito</button>
+                                <button type="button" class="payment-option" data-value="Débito">Débito</button>
+                                <button type="button" class="payment-option" data-value="Boleto">Boleto</button>
+                            </div>
+                            <span id="payment-options-validation" class="validation-message" style="display: none;">Selecione ao menos uma forma de pagamento.</span>
+                        </div>
+                        <div id="orcamento-total">TOTAL: R$ 0,00</div>
+                        <button type="submit" class="btn btn-primary" id="submit-orcamento-btn" style="margin-top: 25px;"><i class="fas fa-save"></i> Salvar Orçamento</button>
+                        <button type="button" id="cancelar-edicao-orcamento" class="btn btn-secondary" style="display: none; margin-top: 10px;"><i class="fas fa-times-circle"></i> Cancelar Edição</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="historico-tab" class="tab-content">
+                <div class="historico-layout">
+                    <div class="card data-list">
+                        <h2>Histórico de Serviços <i class="fas fa-folder-open"></i></h2>
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="search-historico" placeholder="Buscar por cliente, placa ou data...">
+                        </div>
+                        <div class="filter-options">
+                            <select id="filter-status">
+                                <option value="">Todos os Status</option>
+                                <option value="Orçamento">Orçamento</option>
+                                <option value="Aprovado">Aprovado</option>
+                                <option value="Finalizado">Finalizado</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                            <input type="date" id="filter-start-date" title="Data Inicial">
+                            <input type="date" id="filter-end-date" title="Data Final">
+                            <button id="clear-filters-btn" class="btn btn-sm btn-secondary"><i class="fas fa-filter-slash"></i> Limpar Filtros</button>
+                        </div>
+                        <ul id="historico-lista">
+                            <!-- History list items or skeleton loaders -->
+                        </ul>
+                    </div>
+                    <div class="card" id="detalhes-orcamento-container" style="display: none;">
+                        <h2>Detalhes do Serviço <i class="fas fa-info-circle"></i></h2>
+                        
+                        <div class="detalhe-view-switcher">
+                            <button id="btn-view-orcamento" class="detalhe-view-btn active"><i class="fas fa-file-alt"></i> Orçamento</button>
+                            <button id="btn-view-recibo" class="detalhe-view-btn" style="display: none;"><i class="fas fa-receipt"></i> Recibo</button>
+                        </div>
+                        
+                        <div id="detalhe-orcamento-bloco" class="detalhe-bloco">
+                           <h3>Texto do Orçamento <i class="fas fa-scroll"></i></h3>
+                           <pre id="detalhes-orcamento-texto"></pre>
+                           <div class="detalhe-bloco-actions">
+                               <button id="btn-copiar-orcamento" class="btn btn-sm btn-secondary"><i class="fas fa-copy"></i> Copiar</button>
+                               <button id="btn-whatsapp-orcamento" class="btn btn-sm btn-success"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                           </div>
+                        </div>
+
+                        <div id="detalhe-recibo-bloco" class="detalhe-bloco" style="display: none;">
+                            <h3>Texto do Recibo de Serviço <i class="fas fa-money-bill-alt"></i></h3>
+                            <pre id="detalhes-recibo-texto"></pre>
+                            <div class="detalhe-bloco-actions">
+                                <button id="btn-copiar-recibo" class="btn btn-sm btn-secondary"><i class="fas fa-copy"></i> Copiar</button>
+                                <button id="btn-whatsapp-recibo" class="btn btn-sm btn-success"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                           </div>
+                        </div>
+
+                        <div class="detalhes-status-actions">
+                             <button id="btn-edit-orcamento" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> Editar</button>
+                             <button id="btn-aprovar" class="btn btn-sm" style="background-color: var(--accent-orange)"><i class="fas fa-thumbs-up"></i> Aprovar</button>
+                             <button id="btn-finalizar" class="btn btn-sm" style="background-color: var(--accent-green)"><i class="fas fa-check-double"></i> Finalizar</button>
+                             <button id="btn-cancelar" class="btn btn-sm" style="background-color: var(--accent-red-status);"><i class="fas fa-times-circle"></i> Cancelar</button>
+                             <button id="btn-excluir-orcamento" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="notification"></div>
+    
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title">Confirmar Ação</h3>
+            <p id="modal-message">Você tem certeza?</p>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn btn-secondary"><i class="fas fa-ban"></i> Cancelar</button>
+                <button id="modal-confirm-btn" class="btn btn-danger"><i class="fas fa-check-circle"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="sync-overlay">
+        <div class="sync-spinner"><i class="fas fa-sync-alt"></i></div>
+        <p>Sincronizando dados...</p>
+    </div>
+
+    <button id="back-to-top-btn" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
+
+    <script type="module">
+        // ===================================================================================
+        // DADOS DO ESTABELECIMENTO (ESTABLISHMENT DATA)
+        // ===================================================================================
+        const ESTABELECIMENTO = {
+            nome: "R.M. Estética Automotiva",
+            telefone: "24999486232", // Only numbers for WhatsApp link
+            endereco: "Rua 40, TV - Recanto dos Pássaros, Pq. Mambucaba, Angra dos Reis - RJ",
+            agradecimento: "Obrigado pela preferência e volte sempre! 👍"
+        };
+
+        // ===================================================================================
+        // SUPABASE CONFIGURATION
+        // ===================================================================================
+        const SUPABASE_URL = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        // !!! IMPORTANT: REPLACE THIS WITH YOUR ACTUAL SUPABASE PUBLIC KEY !!!
+        // You can find this in your Supabase project settings -> API -> Project API keys -> anon public
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY'; 
+
+        if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY === 'YOUR_SUPABASE_API_KEY_HERE' || SUPABASE_KEY.length < 50) {
+            // Display a critical error message if Supabase credentials are not configured or are placeholders.
+            document.body.innerHTML = `
+                <div style="padding: 40px; text-align: center; font-size: 1.2rem; color: #ffcc00; background-color: #333; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <h1><i class="fas fa-exclamation-triangle" style="color: orange;"></i> Erro de Configuração Crítico</h1>
+                    <p>As credenciais do Supabase não foram encontradas ou estão incorretas.</p>
+                    <p style="font-size: 0.9rem; color: #bbb;">Por favor, edite o código-fonte e substitua 'YOUR_SUPABASE_API_KEY_HERE' pela sua chave pública Supabase real.</p>
+                    <p style="font-size: 0.9rem; color: #bbb;">Você pode encontrar a chave em <i>Configurações do Projeto > Chave de API > Anon Public</i> no seu painel Supabase.</p>
+                </div>`;
+            throw new Error("Supabase credentials not configured or placeholder used. Please check SUPABASE_URL and SUPABASE_KEY constants.");
+        }
+
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ===================================================================================
+        // APPLICATION LOGIC START
+        // ===================================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global state object to manage application data
+            let state = {
+                clientes: [], 
+                servicos: [], 
+                orcamentos: [],
+                editandoClienteId: null, 
+                editandoServicoId: null,
+                editandoOrcamentoId: null, // New: ID of the budget being edited
+                novoOrcamentoItens: [], // Items for the new/edited budget, including quantity
+                orcamentoSelecionado: null, // Currently selected budget in history details
+                isSyncing: false,
+                isOffline: false, 
+                supabaseListeners: [] 
+            };
+
+            // DOM Element Selectors for frequently accessed elements
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            // Cached DOM elements
+            const syncBtn = $('#sync-btn');
+            const notification = $('#notification');
+            const syncOverlay = $('#sync-overlay');
+            const backToTopBtn = $('#back-to-top-btn');
+            const offlineIndicator = $('#offline-indicator');
+
+            // Cliente tab elements
+            const clienteForm = $('#cliente-form');
+            const clientesLista = $('#clientes-lista');
+            const searchClienteInput = $('#search-cliente');
+            const clienteTelefoneInput = $('#cliente-telefone');
+            const clienteNomeInput = $('#cliente-nome');
+            const clienteCarroInput = $('#cliente-carro');
+            const clientePlacaInput = $('#cliente-placa'); 
+
+            // Serviço tab elements
+            const servicoForm = $('#servico-form');
+            const servicosLista = $('#servicos-lista');
+            const searchServicoInput = $('#search-servico');
+            const servicoDescricaoInput = $('#servico-descricao');
+            const servicoValorInput = $('#servico-valor');
+
+            // Novo Orçamento tab elements
+            const orcamentoForm = $('#orcamento-form');
+            const orcamentoIdToEditInput = $('#orcamento-id-to-edit'); 
+            const orcamentoFormTitle = $('#orcamento-form-title');
+            const orcamentoClienteSelect = $('#orcamento-cliente');
+            const orcamentoServicoSelect = $('#orcamento-servico-select');
+            const orcamentoServicoQuantidadeInput = $('#orcamento-servico-quantidade'); 
+            const addServicoBtn = $('#add-servico-btn');
+            const orcamentoServicosAdicionados = $('#orcamento-servicos-adicionados');
+            const orcamentoDescontoInput = $('#orcamento-desconto');
+            const orcamentoTotalDiv = $('#orcamento-total');
+            const paymentOptionsContainer = $('#payment-options');
+            const paymentOptionsValidation = $('#payment-options-validation');
+            const submitOrcamentoBtn = $('#submit-orcamento-btn');
+            const cancelarEdicaoOrcamentoBtn = $('#cancelar-edicao-orcamento');
+
+
+            // Histórico tab elements
+            const historicoLista = $('#historico-lista');
+            const searchHistoricoInput = $('#search-historico');
+            const filterStatusSelect = $('#filter-status');
+            const filterStartDateInput = $('#filter-start-date');
+            const filterEndDateInput = $('#filter-end-date');
+            const clearFiltersBtn = $('#clear-filters-btn');
+            const detalhesContainer = $('#detalhes-orcamento-container');
+            const recentActivityList = $('#recent-activity-list');
+
+            // Modal elements
+            const confirmModal = $('#confirm-modal');
+            const modalConfirmBtn = $('#modal-confirm-btn');
+            const modalCancelBtn = $('#modal-cancel-btn');
+            let onConfirmCallback = null; 
+
+            // Debounce function
+            const debounce = (func, delay) => {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), delay);
+                };
+            };
+
+            // ===================================================================================
+            // UTILITY FUNCTIONS
+            // ===================================================================================
+
+            /**
+             * Displays a temporary notification message.
+             * @param {string} message - The message to display.
+             * @param {'success' | 'error' | 'warning'} type - The type of notification (influences color).
+             */
+            const showNotification = (message, type = 'success') => { 
+                notification.textContent = message; 
+                notification.className = `show ${type}`; 
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000); 
+            };
+
+            /**
+             * Triggers a confetti animation at the center of the screen.
+             * @param {'success' | 'warning'} type - Determines confetti color.
+             */
+            const triggerConfetti = (type = 'success') => {
+                const colors = type === 'success' 
+                    ? ['#22c55e', '#10b981', '#34d399', '#6ee7b7'] // Greenish
+                    : ['#f97316', '#fb923c', '#fdba74', '#fed7aa']; // Orangish
+                
+                const count = 30; // Number of confetti particles
+                const container = document.createElement('div');
+                container.style.position = 'fixed';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100vw';
+                container.style.height = '100vh';
+                container.style.pointerEvents = 'none';
+                container.style.overflow = 'hidden';
+                container.style.zIndex = '3000';
+                document.body.appendChild(container);
+
+                for (let i = 0; i < count; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.backgroundColor = color;
+
+                    const startX = window.innerWidth / 2;
+                    const startY = window.innerHeight / 2;
+                    
+                    const endX = startX + (Math.random() - 0.5) * 600; // Spread horizontally
+                    const endY = startY + (Math.random() * window.innerHeight * 0.8) - (window.innerHeight / 2); // Fall downwards
+
+                    confetti.style.left = `${startX}px`;
+                    confetti.style.top = `${startY}px`;
+                    confetti.style.setProperty('--x', `${endX - startX}px`);
+                    confetti.style.setProperty('--y', `${endY - startY}px`);
+                    
+                    confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                    confetti.style.animationDuration = `${1.5 + Math.random() * 0.5}s`;
+
+                    container.appendChild(confetti);
+
+                    confetti.addEventListener('animationend', () => {
+                        confetti.remove();
+                        if (!container.hasChildNodes()) {
+                            container.remove();
+                        }
+                    });
+                }
+            };
+
+            /**
+             * Switches the active tab view.
+             * @param {string} tabId - The ID of the tab to activate (e.g., 'dashboard', 'clientes').
+             */
+            const showTab = (tabId) => { 
+                $$('.tab-content').forEach(t => t.classList.remove('active')); 
+                $$('.nav-btn').forEach(b => b.classList.remove('active')); 
+                $(`#${tabId}-tab`).classList.add('active'); 
+                $(`.nav-btn[data-tab="${tabId}"]`).classList.add('active'); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            /**
+             * Formats a number as Brazilian currency.
+             * @param {number} value - The number to format.
+             * @returns {string} - The formatted currency string.
+             */
+            const formatCurrency = (value) => 
+                value != null ? parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+
+            /**
+             * Formats a date string into a Brazilian locale date/time.
+             * @param {string} dateString - The date string to format.
+             * @returns {string} - The formatted date/time string.
+             */
+            const formatDateTime = (dateString) => 
+                dateString ? new Date(dateString).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A';
+            
+            /**
+             * Formats a raw phone number into a readable (XX) XXXXX-XXXX format.
+             * @param {string} value - The phone number string.
+             * @returns {string} - The formatted phone number.
+             */
+            const formatPhone = (value) => { 
+                if (!value) return ""; 
+                value = value.replace(/\D/g, '').slice(0, 11); 
+                if (value.length > 7) value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'); 
+                else if (value.length > 2) value = value.replace(/(\d{2})(\d+)/, '($1) $2'); 
+                return value; 
+            };
+
+            /**
+             * Cleans a phone number for WhatsApp URL (removes non-digits, adds 55 for Brazil).
+             * @param {string} value - The phone number string.
+             * @returns {string | null} - The cleaned phone number or null.
+             */
+            const cleanPhone = (value) => value ? `55${value.replace(/\D/g, '')}` : null;
+
+            /**
+             * Shows the confirmation modal.
+             * @param {string} title - The title of the modal.
+             * @param {string} message - The message to display.
+             * @param {function} callback - The function to call if confirmed.
+             */
+            const showConfirmModal = (title, message, callback) => { 
+                $('#modal-title').textContent = title; 
+                $('#modal-message').textContent = message; 
+                onConfirmCallback = callback; 
+                confirmModal.classList.add('active'); 
+            };
+
+            /** Hides the confirmation modal. */
+            const hideConfirmModal = () => { 
+                confirmModal.classList.remove('active'); 
+                onConfirmCallback = null; 
+            };
+
+            /**
+             * Generates HTML for an empty list message.
+             * @param {string} message - Main message.
+             * @param {string} suggestion - Suggestion text.
+             * @returns {string} HTML for the empty list message.
+             */
+            const renderEmptyState = (message, suggestion) => `
+                <div class="empty-list-message">
+                    <p><i class="fas fa-info-circle"></i> ${message}</p>
+                    <small>${suggestion}</small>
+                </div>
+            `;
+
+            /**
+             * Displays skeleton loaders in a target element.
+             * @param {HTMLElement} targetElement - The element to fill with skeletons.
+             * @param {number} count - Number of skeleton items.
+             * @param {string} type - 'list' or 'stat-card' or 'chart'.
+             */
+            const showSkeletons = (targetElement, count, type = 'list') => {
+                let html = '';
+                if (type === 'chart') {
+                    html = `<div class="skeleton-loading-chart skeleton-loading"></div>`;
+                } else {
+                    for (let i = 0; i < count; i++) {
+                        if (type === 'list') {
+                            html += `<li class="skeleton-loading-list-item skeleton-loading"></li>`;
+                        } else if (type === 'stat-card') {
+                            html += `<div class="stat-card skeleton-loading-stat-card"></div>`;
+                        }
+                    }
+                }
+                targetElement.innerHTML = html;
+            };
+            
+            /**
+             * Exports data to a CSV file.
+             * @param {Array<Object>} data - The array of objects to export.
+             * @param {string} filename - The name of the CSV file.
+             */
+            const exportToCsv = (data, filename) => {
+                if (!data || data.length === 0) {
+                    showNotification('Nenhum dado para exportar.', 'warning');
+                    return;
+                }
+
+                const headers = Object.keys(data[0]).filter(key => 
+                    !['created_at', 'updated_at', 'deleted_at', 'cliente_id', 'servico_id', 'orcamento_id'].includes(key) &&
+                    typeof data[0][key] !== 'object' 
+                );
+                
+                const csvRows = [];
+                csvRows.push(headers.map(h => `"${h}"`).join(',')); 
+
+                for (const row of data) {
+                    const values = headers.map(header => {
+                        let val = row[header];
+                        if (header === 'clientes' && val && val.nome) {
+                            val = val.nome; 
+                        } else if (header === 'orcamento_itens' && Array.isArray(val)) {
+                            val = val.map(item => `${item.descricao_servico} (x${item.quantidade})`).join('; '); 
+                        } else if (typeof val === 'object' && val !== null) {
+                            val = JSON.stringify(val); 
+                        }
+                        return `"${String(val).replace(/"/g, '""').replace(/\n/g, '\\n')}"`;
+                    });
+                    csvRows.push(values.join(','));
+                }
+
+                const csvString = csvRows.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) { 
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showNotification('Dados exportados para CSV!', 'success');
+                } else {
+                    showNotification('Seu navegador não suporta exportação CSV direta.', 'error');
+                }
+            };
+
+            /**
+             * Manages validation icons for form inputs.
+             * @param {HTMLInputElement} inputElement - The input element.
+             */
+            const handleValidationIcon = (inputElement) => {
+                const formGroup = inputElement.closest('.form-group');
+                if (!formGroup) return;
+
+                let icon = formGroup.querySelector('.validation-icon');
+                if (!icon) {
+                    icon = document.createElement('i');
+                    icon.classList.add('validation-icon', 'fas');
+                    formGroup.appendChild(icon);
+                }
+
+                if (inputElement.value.trim() === '') {
+                    icon.style.display = 'none';
+                    return;
+                }
+
+                if (inputElement.validity.valid) {
+                    icon.classList.remove('fa-times-circle');
+                    icon.classList.add('fa-check-circle');
+                    icon.style.color = 'var(--accent-green)';
+                    icon.style.display = 'block';
+                } else {
+                    icon.classList.remove('fa-check-circle');
+                    icon.classList.add('fa-times-circle');
+                    icon.style.color = 'var(--accent-red-status)';
+                    icon.style.display = 'block';
+                }
+            };
+
+
+            // ===================================================================================
+            // REAL-TIME DATA SUBSCRIPTIONS (ON SNAPSHOT)
+            // ===================================================================================
+
+            /**
+             * Initializes Supabase real-time listeners for all main collections.
+             * These listeners will update the global state whenever data changes in the database.
+             */
+            const setupSupabaseListeners = () => {
+                state.supabaseListeners.forEach(unsubscribe => unsubscribe());
+                state.supabaseListeners = []; 
+
+                // Client listener
+                const clientChannel = db.channel('clientes_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, payload => {
+                    fetchAllData(false); 
+                }).subscribe();
+                state.supabaseListeners.push(() => clientChannel.unsubscribe());
+
+                // Service listener
+                const serviceChannel = db.channel('servicos_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'servicos' }, payload => {
+                    fetchAllData(false);
+                }).subscribe();
+                state.supabaseListeners.push(() => serviceChannel.unsubscribe());
+
+                // Orcamento listener (includes orcamento_itens changes indirectly as it triggers a full refetch of orcamentos)
+                const orcamentoChannel = db.channel('orcamentos_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'orcamentos' }, payload => {
+                    fetchAllData(false);
+                }).subscribe();
+                state.supabaseListeners.push(() => orcamentoChannel.unsubscribe());
+
+                const orcamentoItemsChannel = db.channel('orcamento_itens_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'orcamento_itens' }, payload => {
+                    fetchAllData(false); // Changes in items should also trigger orcamento list refresh
+                }).subscribe();
+                state.supabaseListeners.push(() => orcamentoItemsChannel.unsubscribe());
+
+
+                // Listen for network status changes using browser native events
+                const updateNetworkStatus = () => {
+                    state.isOffline = !navigator.onLine;
+                    if (state.isOffline) {
+                        offlineIndicator.style.display = 'block';
+                        showNotification('Você está offline. Conecte-se para sincronizar os dados.', 'error');
+                    } else {
+                        offlineIndicator.style.display = 'none';
+                        showNotification('Conectado novamente! Sincronizando dados...', 'success');
+                        fetchAllData(false); // Trigger a refresh when back online
+                    }
+                };
+
+                window.addEventListener('online', updateNetworkStatus);
+                window.addEventListener('offline', updateNetworkStatus);
+                // Initial check
+                updateNetworkStatus();
+            };
+
+            // ===================================================================================
+            // DATA FETCHING & RENDERING
+            // ===================================================================================
+
+            /** * Fetches all necessary data from Supabase and updates the UI.
+             * @param {boolean} showLoadingOverlay - Whether to show the full sync overlay. Defaults to true for manual syncs.
+             */
+            const fetchAllData = async (showLoadingOverlay = true) => {
+                if (state.isSyncing) return; 
+
+                state.isSyncing = true;
+                syncBtn.classList.add('syncing');
+                if (showLoadingOverlay) {
+                    syncOverlay.style.display = 'flex'; 
+                }
+                
+                renderSkeletons(); // Show skeletons before fetching
+
+                try {
+                    const [clientesRes, servicosRes, orcamentosRes] = await Promise.all([
+                        db.from('clientes').select('*').order('nome', { ascending: true }),
+                        db.from('servicos').select('*').order('descricao', { ascending: true }),
+                        // Fetch nested client and orcamento_itens data
+                        db.from('orcamentos').select(`
+                            id, created_at, updated_at, valor_total, status, desconto, formas_pagamento, 
+                            clientes ( id, nome, carro, telefone, placa ), 
+                            orcamento_itens ( id, servico_id, descricao_servico, valor_cobrado, quantidade )
+                        `).order('created_at', { ascending: false })
+                    ]);
+
+                    if (clientesRes.error) throw new Error(`Clientes: ${clientesRes.error.message}`);
+                    if (servicosRes.error) throw new Error(`Serviços: ${servicosRes.error.message}`);
+                    if (orcamentosRes.error) throw new Error(`Orçamentos: ${orcamentosRes.error.message}`);
+                    
+                    state.clientes = clientesRes.data;
+                    state.servicos = servicosRes.data;
+                    state.orcamentos = orcamentosRes.data;
+
+                    renderAllContent(); // Call the main rendering function
+                    if (showLoadingOverlay) { 
+                        showNotification('Dados sincronizados!', 'success');
+                    }
+                } catch (error) {
+                    console.error('Fetch all data error:', error);
+                    showNotification(`Falha ao sincronizar: ${error.message}`, 'error');
+                    renderEmptyStatesOnFailure(); 
+                } finally {
+                    state.isSyncing = false;
+                    syncBtn.classList.remove('syncing');
+                    if (showLoadingOverlay) {
+                        syncOverlay.style.display = 'none'; 
+                    }
+                }
+            };
+
+            /** Renders all major sections of the UI. */
+            const renderAllContent = () => { // Renamed to avoid confusion with renderAll in debounce setup
+                renderClientes(); 
+                renderServicos(); 
+                renderOrcamentos(); 
+                renderOrcamentoClienteOptions(); 
+                renderOrcamentoServicoOptions(); 
+                updateDashboard(); 
+                renderRecentActivity(); 
+                // If an orcamento was being edited or selected, re-display its details to ensure fresh data
+                if (state.orcamentoSelecionado) {
+                    const updatedOrcamento = state.orcamentos.find(o => o.id === state.orcamentoSelecionado.id);
+                    if (updatedOrcamento) {
+                        state.orcamentoSelecionado = updatedOrcamento;
+                        displayOrcamentoDetails();
+                    } else {
+                        // If selected orcamento was deleted, clear details
+                        state.orcamentoSelecionado = null;
+                        detalhesContainer.style.display = 'none';
+                    }
+                }
+                // If form is in edit mode, ensure it stays populated with fresh data
+                if (state.editandoOrcamentoId) {
+                    const orcamentoToRePopulate = state.orcamentos.find(o => o.id === state.editandoOrcamentoId);
+                    if (orcamentoToRePopulate) {
+                        populateOrcamentoFormForEdit(orcamentoToRePopulate);
+                    } else {
+                        // If the edited budget was deleted by another user, reset form
+                        resetOrcamentoForm();
+                        showNotification('O orçamento que você estava editando foi removido por outro usuário.', 'warning');
+                    }
+                }
+            };
+
+            /** Displays skeleton loaders in all relevant sections. */
+            const renderSkeletons = () => {
+                showSkeletons($('#dashboard-stats-container'), 5, 'stat-card');
+                showSkeletons($('#monthly-finalized-chart'), 1, 'chart');
+                showSkeletons($('#recent-activity-list'), 3, 'list');
+                showSkeletons($('#clientes-lista'), 3, 'list');
+                showSkeletons($('#servicos-lista'), 3, 'list');
+                showSkeletons($('#historico-lista'), 3, 'list');
+
+                orcamentoClienteSelect.innerHTML = '<option value="">Carregando clientes...</option>';
+                orcamentoServicoSelect.innerHTML = '<option value="">Carregando serviços...</option>';
+                orcamentoClienteSelect.disabled = true;
+                orcamentoServicoSelect.disabled = true;
+                orcamentoServicoQuantidadeInput.disabled = true;
+                addServicoBtn.disabled = true;
+            };
+
+            /** Displays empty states if data fetching fails. */
+            const renderEmptyStatesOnFailure = () => {
+                clientesLista.innerHTML = renderEmptyState('Não foi possível carregar os clientes.', 'Verifique sua conexão e tente sincronizar.');
+                servicosLista.innerHTML = renderEmptyState('Não foi possível carregar os serviços.', 'Verifique sua conexão e tente sincronizar.');
+                historicoLista.innerHTML = renderEmptyState('Não foi possível carregar o histórico.', 'Verifique sua conexão e tente sincronizar.');
+                recentActivityList.innerHTML = renderEmptyState('Não foi possível carregar a atividade recente.', 'Verifique sua conexão e tente sincronizar.');
+            };
+
+            // ===================================================================================
+            // DASHBOARD LOGIC
+            // ===================================================================================
+
+            /** Updates the dashboard statistics. */
+            const updateDashboard = () => {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                
+                const totalRevenue = state.orcamentos
+                    .filter(o => o.status === 'Finalizado')
+                    .reduce((sum, o) => sum + parseFloat(o.valor_total || 0), 0);
+
+                $('#dashboard-stats-container').innerHTML = `
+                    <div class="stat-card"><div class="icon"><i class="fas fa-users"></i></div><h3>Clientes</h3><p id="stat-clientes">${state.clientes.length}</p></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-hourglass-half"></i></div><h3>Pendentes</h3><p id="stat-pendentes">${state.orcamentos.filter(o => o.status === 'Orçamento').length}</p></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-check-circle"></i></div><h3>Aprovados</h3><p id="stat-aprovados">${state.orcamentos.filter(o => o.status === 'Aprovado').length}</p></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-calendar-check"></i></div><h3>Mês Atual</h3><p id="stat-finalizados-mes">${state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at || o.created_at) >= startOfMonth).length}</p></div>
+                    <div class="stat-card" style="grid-column: span 2;"><div class="icon"><i class="fas fa-dollar-sign"></i></div><h3>Faturamento Total</h3><p id="stat-faturamento-total">${formatCurrency(totalRevenue)}</p></div>
+                `;
+
+                renderMonthlyStatsChart();
+            };
+
+            /** Renders a simple bar chart for monthly finalized services. */
+            const renderMonthlyStatsChart = () => {
+                const monthlyData = {}; // { 'YYYY-MM': count }
+                state.orcamentos.forEach(orc => {
+                    if (orc.status === 'Finalizado' && orc.updated_at) {
+                        const monthKey = new Date(orc.updated_at).toLocaleString('pt-BR', { year: 'numeric', month: 'short' });
+                        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+                    }
+                });
+
+                const now = new Date();
+                const months = [];
+                for (let i = 0; i < 6; i++) {
+                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    months.unshift(date.toLocaleString('pt-BR', { month: 'short' })); 
+                }
+
+                let maxCount = 0;
+                months.forEach(month => {
+                    const fullMonthKey = new Date(now.getFullYear(), now.getMonth() - (months.length - 1 - months.indexOf(month)), 1).toLocaleString('pt-BR', { year: 'numeric', month: 'short' });
+                    maxCount = Math.max(maxCount, monthlyData[fullMonthKey] || 0);
+                });
+                maxCount = Math.max(maxCount, 5); 
+
+                const chartHtml = months.map(monthName => {
+                    const fullMonthKey = new Date(now.getFullYear(), now.getMonth() - (months.length - 1 - months.indexOf(monthName)), 1).toLocaleString('pt-BR', { year: 'numeric', month: 'short' });
+                    const count = monthlyData[fullMonthKey] || 0;
+                    const barHeight = (count / maxCount) * 100; 
+                    return `
+                        <div class="chart-bar-container">
+                            <div class="chart-bar-value">${count}</div>
+                            <div class="chart-bar" style="height: ${barHeight}%;"></div>
+                            <div class="chart-bar-label">${monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '')}</div>
+                        </div>
+                    `;
+                }).join('');
+                $('#monthly-finalized-chart').innerHTML = chartHtml;
+            };
+
+            /** Renders a list of recent activities (latest 8 created or updated budgets). */
+            const renderRecentActivity = () => {
+                const sortedOrcamentos = [...state.orcamentos].sort((a, b) => {
+                    const dateA = new Date(a.updated_at || a.created_at);
+                    const dateB = new Date(b.updated_at || b.created_at);
+                    return dateB - dateA;
+                });
+                const recentOrcamentos = sortedOrcamentos.slice(0, 8);
+
+                if (recentOrcamentos.length === 0) {
+                    recentActivityList.innerHTML = renderEmptyState('Nenhuma atividade recente.', 'Crie um novo orçamento para começar.');
+                    return;
+                }
+
+                recentActivityList.innerHTML = recentOrcamentos.map(orc => `
+                    <li data-id="${orc.id}" class="data-list-item">
+                        <div>
+                            <strong>${orc.clientes?.nome || 'Cliente Removido'}</strong><br>
+                            <small><i class="fas fa-car"></i> ${orc.clientes?.carro || 'Veículo não informado'}</small>
+                        </div>
+                        <div>
+                            <span class="status-indicator status-${orc.status}">${orc.status}</span>
+                            <small>${formatDateTime(orc.updated_at || orc.created_at)}</small>
+                        </div>
+                    </li>
+                `).join('');
+            };
+
+            // ===================================================================================
+            // CLIENTS TAB LOGIC
+            // ===================================================================================
+
+            /** Renders the list of clients based on search input. */
+            const renderClientes = () => {
+                const searchTerm = searchClienteInput.value.toLowerCase().trim();
+                const filtered = state.clientes.filter(c => 
+                    c.nome.toLowerCase().includes(searchTerm) || 
+                    (c.placa && c.placa.toLowerCase().includes(searchTerm)) ||
+                    (c.telefone && formatPhone(c.telefone).includes(searchTerm))
+                );
+
+                if (filtered.length === 0) {
+                    clientesLista.innerHTML = renderEmptyState('Nenhum cliente encontrado.', 'Adicione um novo cliente no formulário ao lado.');
+                    return;
+                }
+
+                clientesLista.innerHTML = filtered.map(c => `
+                    <li data-id="${c.id}" class="data-list-item">
+                        <div>
+                            <strong>${c.nome}</strong><br>
+                            <small><i class="fas fa-car"></i> ${c.carro || 'N/D'} | <i class="fas fa-id-card"></i> Placa: ${c.placa || 'N/D'}</small><br>
+                            <small><i class="fas fa-phone-alt"></i> ${formatPhone(c.telefone) || 'N/D'}</small>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-sm btn-secondary edit-cliente-btn" data-id="${c.id}" title="Editar Cliente"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger delete-cliente-btn" data-id="${c.id}" title="Excluir Cliente"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </li>
+                `).join('');
+            };
+
+            /** Handles client form submission (add or update). */
+            const handleClienteSubmit = async (e) => { 
+                e.preventDefault(); 
+                
+                if (!clienteForm.checkValidity()) {
+                    clienteForm.reportValidity(); // Shows browser's validation messages
+                    handleValidationIcon(clienteNomeInput);
+                    handleValidationIcon(clienteTelefoneInput);
+                    handleValidationIcon(clientePlacaInput);
+                    showNotification('Por favor, preencha todos os campos obrigatórios corretamente.', 'warning');
+                    return;
+                }
+
+                const data = { 
+                    nome: clienteNomeInput.value.trim(), 
+                    telefone: clienteTelefoneInput.value.trim(), 
+                    carro: clienteCarroInput.value.trim(), 
+                    placa: clientePlacaInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') // Remove non-alphanumeric chars
+                }; 
+                let error;
+
+                try {
+                    if (state.editandoClienteId) {
+                        ({ error } = await db.from('clientes').update(data).eq('id', state.editandoClienteId));
+                    } else {
+                        ({ error } = await db.from('clientes').insert(data));
+                    }
+
+                    if (error) throw new Error(error.message);
+
+                    showNotification(`Cliente ${state.editandoClienteId ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success'); 
+                    triggerConfetti('success');
+                    resetClienteForm(); 
+                } catch (err) {
+                    console.error('Erro ao salvar cliente:', err);
+                    showNotification(`Erro ao salvar cliente: ${err.message}`, 'error');
+                }
+            };
+
+            /** Populates the client form for editing. */
+            const handleEditCliente = (id) => { 
+                const c = state.clientes.find(cl => cl.id == id); 
+                if(!c) {
+                    showNotification('Cliente não encontrado para edição.', 'error');
+                    return;
+                }
+                state.editandoClienteId = id; 
+                $('#cliente-form-title').innerHTML = 'Editar Cliente <i class="fas fa-user-edit"></i>'; 
+                clienteNomeInput.value = c.nome; 
+                clienteTelefoneInput.value = c.telefone; 
+                clienteCarroInput.value = c.carro; 
+                clientePlacaInput.value = c.placa; 
+                $('#cancelar-edicao-cliente').style.display = 'inline-flex'; 
+                $('#cliente-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                // Manually trigger validation icons for pre-filled data
+                handleValidationIcon(clienteNomeInput);
+                handleValidationIcon(clienteTelefoneInput);
+                handleValidationIcon(clientePlacaInput);
+            };
+
+            /** Initiates deletion of a client. */
+            const handleDeleteCliente = (id) => showConfirmModal(
+                'Excluir Cliente', 
+                'Esta ação é irreversível e irá apagar também todos os orçamentos vinculados a este cliente. Deseja continuar?', 
+                async () => { 
+                    try {
+                        const { error } = await db.from('clientes').delete().eq('id', id); 
+                        if (error) throw new Error(error.message); 
+                        showNotification('Cliente excluído com sucesso!', 'success'); 
+                        triggerConfetti('success');
+                    } catch (error) {
+                        console.error('Erro ao excluir cliente:', error);
+                        showNotification(`Erro ao excluir cliente: ${error.message}`, 'error'); 
+                    } finally {
+                        hideConfirmModal(); 
+                    }
+                }
+            );
+
+            /** Resets the client form to its initial state. */
+            const resetClienteForm = () => { 
+                state.editandoClienteId = null; 
+                clienteForm.reset(); 
+                $('#cliente-form-title').innerHTML = 'Novo Cliente <i class="fas fa-user-plus"></i>'; 
+                $('#cancelar-edicao-cliente').style.display = 'none'; 
+                // Clear all custom validities and hide validation icons
+                clienteNomeInput.setCustomValidity(''); 
+                clienteTelefoneInput.setCustomValidity('');
+                clientePlacaInput.setCustomValidity('');
+                $$('#cliente-form .validation-icon').forEach(icon => icon.style.display = 'none');
+            };
+            
+            // ===================================================================================
+            // SERVICES TAB LOGIC
+            // ===================================================================================
+
+            /** Renders the list of services based on search input. */
+            const renderServicos = () => {
+                const searchTerm = searchServicoInput.value.toLowerCase().trim();
+                const filtered = state.servicos.filter(s => s.descricao.toLowerCase().includes(searchTerm));
+
+                 if (filtered.length === 0) {
+                    servicosLista.innerHTML = renderEmptyState('Nenhum serviço encontrado.', 'Adicione um novo serviço no formulário ao lado.');
+                    return;
+                }
+
+                servicosLista.innerHTML = filtered.map(s => `
+                    <li data-id="${s.id}" class="data-list-item">
+                        <div>
+                            <strong>${s.descricao}</strong><br>
+                            <small>${formatCurrency(s.valor)}</small>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-sm btn-secondary edit-servico-btn" data-id="${s.id}" title="Editar Serviço"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger delete-servico-btn" data-id="${s.id}" title="Excluir Serviço"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </li>
+                `).join('');
+            };
+
+            /** Handles service form submission (add or update). */
+            const handleServicoSubmit = async (e) => { 
+                e.preventDefault(); 
+                
+                if (!servicoForm.checkValidity()) {
+                    servicoForm.reportValidity();
+                    handleValidationIcon(servicoDescricaoInput);
+                    handleValidationIcon(servicoValorInput);
+                    showNotification('Por favor, preencha todos os campos obrigatórios corretamente.', 'warning');
+                    return;
+                }
+
+                const data = { 
+                    descricao: servicoDescricaoInput.value.trim(), 
+                    valor: parseFloat(servicoValorInput.value) 
+                }; 
+                let error;
+
+                try {
+                    if (state.editandoServicoId) {
+                        ({ error } = await db.from('servicos').update(data).eq('id', state.editandoServicoId));
+                    } else {
+                        ({ error } = await db.from('servicos').insert(data));
+                    }
+
+                    if (error) throw new Error(error.message);
+                    
+                    showNotification(`Serviço ${state.editandoServicoId ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success'); 
+                    triggerConfetti('success');
+                    resetServicoForm(); 
+                } catch (err) {
+                    console.error('Erro ao salvar serviço:', err);
+                    showNotification(`Erro ao salvar serviço: ${err.message}`, 'error'); 
+                }
+            };
+
+            /** Populates the service form for editing. */
+            const handleEditServico = (id) => { 
+                const s = state.servicos.find(sv => sv.id == id); 
+                if (!s) {
+                    showNotification('Serviço não encontrado para edição.', 'error');
+                    return;
+                }
+                state.editandoServicoId = id; 
+                $('#servico-form-title').innerHTML = 'Editar Serviço <i class="fas fa-edit"></i>'; 
+                servicoDescricaoInput.value = s.descricao; 
+                servicoValorInput.value = s.valor; 
+                $('#cancelar-edicao-servico').style.display = 'inline-flex'; 
+                $('#servico-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                // Manually trigger validation icons
+                handleValidationIcon(servicoDescricaoInput);
+                handleValidationIcon(servicoValorInput);
+            };
+
+            /** Initiates deletion of a service. */
+            const handleDeleteServico = (id) => showConfirmModal(
+                'Excluir Serviço', 
+                'Este serviço será removido. Confirma?', 
+                async () => { 
+                    try {
+                        const { error } = await db.from('servicos').delete().eq('id', id); 
+                        if (error) throw new Error(error.message);
+                        showNotification('Serviço excluído com sucesso!', 'success'); 
+                        triggerConfetti('success');
+                    }
+                    catch (error) {
+                        console.error('Erro ao excluir serviço:', error);
+                        showNotification(`Erro ao excluir serviço: ${error.message}`, 'error'); 
+                    } finally {
+                        hideConfirmModal(); 
+                    }
+                }
+            );
+
+            /** Resets the service form to its initial state. */
+            const resetServicoForm = () => { 
+                state.editandoServicoId = null; 
+                servicoForm.reset(); 
+                $('#servico-form-title').innerHTML = 'Novo Serviço <i class="fas fa-clipboard-list"></i>'; 
+                $('#cancelar-edicao-servico').style.display = 'none'; 
+                servicoDescricaoInput.setCustomValidity(''); 
+                servicoValorInput.setCustomValidity(''); 
+                $$('#servico-form .validation-icon').forEach(icon => icon.style.display = 'none');
+            };
+
+            // ===================================================================================
+            // NEW QUOTE (ORÇAMENTO) LOGIC
+            // ===================================================================================
+
+            /** Populates the client dropdown for new quotes. */
+            const renderOrcamentoClienteOptions = () => { 
+                if (state.clientes.length === 0) {
+                    orcamentoClienteSelect.innerHTML = '<option value="">Nenhum cliente cadastrado...</option>';
+                    orcamentoClienteSelect.disabled = true;
+                    addServicoBtn.disabled = true; 
+                    orcamentoServicoQuantidadeInput.disabled = true;
+                    return;
+                }
+                orcamentoClienteSelect.disabled = false;
+                addServicoBtn.disabled = false;
+                orcamentoServicoQuantidadeInput.disabled = false;
+                orcamentoClienteSelect.innerHTML = '<option value="">Selecione um cliente...</option>' + 
+                    state.clientes.map(c => `<option value="${c.id}">${c.nome} ${c.carro ? `(${c.carro})` : ''}</option>`).join(''); 
+            };
+
+            /** Populates the service dropdown for new quotes. */
+            const renderOrcamentoServicoOptions = () => { 
+                if (state.servicos.length === 0) {
+                    orcamentoServicoSelect.innerHTML = '<option value="">Nenhum serviço cadastrado...</option>';
+                    orcamentoServicoSelect.disabled = true;
+                    addServicoBtn.disabled = true; 
+                    orcamentoServicoQuantidadeInput.disabled = true;
+                    return;
+                }
+                orcamentoServicoSelect.disabled = false;
+                addServicoBtn.disabled = false;
+                orcamentoServicoQuantidadeInput.disabled = false;
+                orcamentoServicoSelect.innerHTML = '<option value="">Selecione um serviço...</option>' + 
+                    state.servicos.map(s => `<option value="${s.id}">${s.descricao} (${formatCurrency(s.valor)})</option>`).join(''); 
+            };
+
+            /** Adds a selected service to the new quote. */
+            const handleAddServicoToOrcamento = () => { 
+                const id = orcamentoServicoSelect.value; 
+                const quantidade = parseInt(orcamentoServicoQuantidadeInput.value, 10);
+
+                if (!id) {
+                    showNotification('Por favor, selecione um serviço para adicionar.', 'warning');
+                    return;
+                }
+                if (isNaN(quantidade) || quantidade <= 0) {
+                    showNotification('A quantidade deve ser um número positivo.', 'warning');
+                    orcamentoServicoQuantidadeInput.reportValidity();
+                    return;
+                }
+                orcamentoServicoQuantidadeInput.setCustomValidity(''); 
+
+                const s = state.servicos.find(sv => sv.id == id); 
+                if(!s) {
+                    showNotification('Serviço não encontrado.', 'error');
+                    return;
+                }
+                
+                const existingItemIndex = state.novoOrcamentoItens.findIndex(item => item.servico_id === s.id);
+                if (existingItemIndex > -1) {
+                    state.novoOrcamentoItens[existingItemIndex].quantidade += quantidade;
+                    showNotification('Quantidade do serviço atualizada!', 'success');
+                } else {
+                    state.novoOrcamentoItens.push({ 
+                        servico_id: s.id, 
+                        descricao_servico: s.descricao, 
+                        valor_cobrado: s.valor,
+                        quantidade: quantidade
+                    }); 
+                    showNotification('Serviço adicionado!', 'success');
+                }
+                
+                renderNovoOrcamentoItens(); 
+                updateOrcamentoTotal(); 
+                orcamentoServicoSelect.value = ''; 
+                orcamentoServicoQuantidadeInput.value = '1';
+                orcamentoServicosAdicionados.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            };
+
+            /** Updates quantity of an existing item in the temporary budget list. */
+            const handleUpdateOrcamentoItemQuantity = (index, newQuantity) => {
+                newQuantity = parseInt(newQuantity, 10);
+                if (isNaN(newQuantity) || newQuantity <= 0) {
+                    showNotification('A quantidade deve ser um número positivo.', 'warning');
+                    renderNovoOrcamentoItens(); 
+                    return;
+                }
+                state.novoOrcamentoItens[index].quantidade = newQuantity;
+                renderNovoOrcamentoItens();
+                updateOrcamentoTotal();
+            };
+
+            /** Renders the list of services added to the current new quote. */
+            const renderNovoOrcamentoItens = () => { 
+                if (state.novoOrcamentoItens.length === 0) {
+                    orcamentoServicosAdicionados.innerHTML = renderEmptyState('Nenhum serviço adicionado.', 'Selecione um serviço acima e clique no \'+\' para adicionar.');
+                    return;
+                }
+                orcamentoServicosAdicionados.innerHTML = state.novoOrcamentoItens.map((item, index) => `
+                    <li>
+                        <div>
+                            <strong>${item.descricao_servico}</strong><br>
+                            <small>${formatCurrency(item.valor_cobrado)}</small>
+                        </div>
+                        <div class="item-actions">
+                            <input type="number" min="1" value="${item.quantidade}" class="orcamento-item-quantity" data-index="${index}" title="Alterar Quantidade">
+                            <button type="button" class="btn btn-sm btn-danger remove-servico-btn" data-index="${index}" title="Remover Serviço">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </li>
+                `).join(''); 
+
+                $$('.orcamento-item-quantity').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const index = e.target.dataset.index;
+                        const newQuantity = e.target.value;
+                        handleUpdateOrcamentoItemQuantity(index, newQuantity);
+                    });
+                });
+            };
+
+            /** Updates the total value of the new quote based on services and discount. */
+            const updateOrcamentoTotal = () => { 
+                const subtotal = state.novoOrcamentoItens.reduce((a, i) => a + (parseFloat(i.valor_cobrado) * i.quantidade), 0); 
+                const discount = parseFloat(orcamentoDescontoInput.value) || 0; 
+                const total = subtotal * (1 - discount / 100); 
+                orcamentoTotalDiv.textContent = `TOTAL: ${formatCurrency(total)}`; 
+            };
+
+            /** Handles the submission of a new or edited quote. */
+            const handleOrcamentoSubmit = async (e) => { 
+                e.preventDefault(); 
+                
+                const clienteId = orcamentoClienteSelect.value;
+                if (!clienteId) {
+                    orcamentoClienteSelect.setCustomValidity('Selecione um cliente para o orçamento.');
+                    orcamentoClienteSelect.reportValidity();
+                    showNotification('Por favor, selecione um cliente para o orçamento.', 'warning');
+                    return;
+                } else {
+                    orcamentoClienteSelect.setCustomValidity('');
+                }
+
+                if (state.novoOrcamentoItens.length === 0) {
+                    showNotification('Adicione ao menos um serviço ao orçamento.', 'warning');
+                    paymentOptionsValidation.style.display = 'block';
+                    setTimeout(() => paymentOptionsValidation.style.display = 'none', 3000);
+                    return;
+                }
+
+                const subtotal = state.novoOrcamentoItens.reduce((a, i) => a + (parseFloat(i.valor_cobrado) * i.quantidade), 0); 
+                const discount = parseFloat(orcamentoDescontoInput.value) || 0; 
+                const total = subtotal * (1 - discount / 100); 
+                
+                const selectedPaymentOptions = Array.from($$('.payment-option.active')).map(btn => btn.dataset.value);
+                const formasPagamento = selectedPaymentOptions.length > 0 ? selectedPaymentOptions.join(', ') : null;
+
+                if (!formasPagamento) {
+                    showNotification('Selecione ao menos uma forma de pagamento.', 'warning');
+                    paymentOptionsValidation.style.display = 'block';
+                    setTimeout(() => paymentOptionsValidation.style.display = 'none', 3000);
+                    return;
+                } else {
+                    paymentOptionsValidation.style.display = 'none';
+                }
+
+                try {
+                    let orcamentoData = { 
+                        cliente_id: clienteId, 
+                        desconto: discount, 
+                        valor_total: total, 
+                        formas_pagamento: formasPagamento 
+                    };
+                    let orcamentoIdToUse = state.editandoOrcamentoId; 
+                    let error;
+                    let resultData = null; 
+
+                    if (orcamentoIdToUse) { 
+                        const currentOrcamento = state.orcamentos.find(o => o.id === orcamentoIdToUse);
+                        orcamentoData.status = currentOrcamento ? currentOrcamento.status : 'Orçamento'; 
+                        orcamentoData.updated_at = new Date().toISOString(); 
+                        ({ error } = await db.from('orcamentos').update(orcamentoData).eq('id', orcamentoIdToUse));
+                    } else { 
+                        orcamentoData.status = 'Orçamento'; 
+                        ({ data: resultData, error } = await db.from('orcamentos').insert(orcamentoData).select().single());
+                        orcamentoIdToUse = resultData ? resultData.id : null; 
+                    }
+                    
+                    if (error) throw new Error(error.message);
+
+                    if (orcamentoIdToUse) {
+                        if (state.editandoOrcamentoId) { 
+                            const { error: deleteError } = await db.from('orcamento_itens').delete().eq('orcamento_id', orcamentoIdToUse);
+                            if (deleteError) throw new Error(`Erro ao limpar itens antigos: ${deleteError.message}`);
+                        }
+
+                        const itemsToInsert = state.novoOrcamentoItens.map(i => ({ 
+                            servico_id: i.servico_id, 
+                            descricao_servico: i.descricao_servico, 
+                            valor_cobrado: i.valor_cobrado,
+                            quantidade: i.quantidade,
+                            orcamento_id: orcamentoIdToUse 
+                        })); 
+                        const { error: itemsError } = await db.from('orcamento_itens').insert(itemsToInsert); 
+                        
+                        if (itemsError) { 
+                            console.error('Erro ao salvar itens do orçamento, tentando desfazer orçamento principal:', itemsError);
+                            if (!state.editandoOrcamentoId) { 
+                                await db.from('orcamentos').delete().eq('id', orcamentoIdToUse);
+                            }
+                            throw new Error(`Erro ao salvar itens do orçamento: ${itemsError.message}.`);
+                        } 
+                    }
+                    
+                    showNotification(`Orçamento ${state.editandoOrcamentoId ? 'atualizado' : 'salvo'} com sucesso!`, 'success'); 
+                    triggerConfetti('success');
+                    resetOrcamentoForm(); 
+                    showTab('historico'); 
+                } catch (err) {
+                    console.error('Erro ao salvar/atualizar orçamento completo:', err);
+                    showNotification(`Erro ao salvar/atualizar orçamento: ${err.message}`, 'error'); 
+                }
+            };
+
+            /** Resets the new quote form. */
+            const resetOrcamentoForm = () => { 
+                state.editandoOrcamentoId = null;
+                orcamentoForm.reset(); 
+                state.novoOrcamentoItens = []; 
+                renderNovoOrcamentoItens(); 
+                updateOrcamentoTotal(); 
+                $$('.payment-option').forEach(b => b.classList.remove('active')); 
+                orcamentoClienteSelect.value = ''; 
+                orcamentoClienteSelect.setCustomValidity(''); 
+                paymentOptionsValidation.style.display = 'none';
+                orcamentoFormTitle.innerHTML = 'Criar Novo Orçamento <i class="fas fa-file-invoice-dollar"></i>';
+                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Orçamento';
+                cancelarEdicaoOrcamentoBtn.style.display = 'none';
+                orcamentoServicoQuantidadeInput.value = '1'; 
+            };
+            
+            // ===================================================================================
+            // HISTORY TAB LOGIC
+            // ===================================================================================
+
+            /** Renders the historical list of quotes based on search, status, and date filters. */
+            const renderOrcamentos = () => {
+                const searchTerm = searchHistoricoInput.value.toLowerCase().trim();
+                const filterStatus = filterStatusSelect.value;
+                const filterStartDate = filterStartDateInput.value ? new Date(filterStartDateInput.value + 'T00:00:00') : null;
+                const filterEndDate = filterEndDateInput.value ? new Date(filterEndDateInput.value + 'T23:59:59') : null;
+
+                const filtered = state.orcamentos.filter(o => {
+                    const matchesSearch = (o.clientes?.nome && o.clientes.nome.toLowerCase().includes(searchTerm)) ||
+                                          (o.clientes?.placa && o.clientes.placa.toLowerCase().includes(searchTerm)) ||
+                                          formatDateTime(o.created_at).includes(searchTerm) ||
+                                          o.status.toLowerCase().includes(searchTerm) ||
+                                          formatCurrency(o.valor_total).toLowerCase().includes(searchTerm);
+                    
+                    const matchesStatus = !filterStatus || o.status === filterStatus;
+
+                    const orcamentoDate = new Date(o.created_at);
+                    const matchesStartDate = !filterStartDate || orcamentoDate >= filterStartDate;
+                    const matchesEndDate = !filterEndDate || orcamentoDate <= filterEndDate;
+
+                    return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
+                });
+
+                if (filtered.length === 0) {
+                    historicoLista.innerHTML = renderEmptyState('Nenhum histórico encontrado.', 'Ajuste os filtros de busca ou crie um novo orçamento.');
+                    return;
+                }
+
+                historicoLista.innerHTML = filtered.map(o => `
+                    <li data-id="${o.id}" class="data-list-item ${o.id === state.orcamentoSelecionado?.id ? 'selected' : ''}">
+                        <div>
+                            <strong>${o.clientes?.nome || 'Cliente Removido'}</strong><br>
+                            <small><i class="fas fa-car"></i> ${o.clientes?.carro || 'N/D'} | <i class="fas fa-id-card"></i> Placa: ${o.clientes?.placa || 'N/D'}</small><br>
+                            <small>${formatDateTime(o.created_at)}</small>
+                        </div>
+                        <div>
+                            <span class="status-indicator status-${o.status}">${o.status}</span>
+                            <strong>${formatCurrency(o.valor_total)}</strong>
+                        </div>
+                    </li>
+                `).join('');
+            };
+
+            /** Handles a click on a historical quote item to show its details. */
+            const handleHistoricoClick = async (id) => { 
+                $$('#historico-lista li').forEach(li => li.classList.remove('selected')); 
+                const selectedLi = $(`#historico-lista li[data-id="${id}"]`); 
+                if (selectedLi) { 
+                    selectedLi.classList.add('selected'); 
+                    selectedLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); 
+                } 
+
+                try {
+                    // Try to find the budget in the current state
+                    let data = state.orcamentos.find(o => o.id == id); 
+
+                    // If not found, force a data refresh and try again
+                    if (!data) {
+                        showNotification('A carregar detalhes... (atualizando dados)', 'warning');
+                        await fetchAllData(false); // Fetch data silently
+                        data = state.orcamentos.find(o => o.id == id); // Try finding again after refresh
+                    }
+                    
+                    if (!data) {
+                        // If still not found after refresh, then it truly doesn't exist or there's a deeper issue
+                        throw new Error('Orçamento não encontrado no estado local após atualização.');
+                    }
+
+                    state.orcamentoSelecionado = data; 
+                    displayOrcamentoDetails(); 
+                } catch (error) {
+                    console.error('Erro ao buscar detalhes do orçamento:', error);
+                    return showNotification(`Erro ao buscar detalhes: ${error.message}`, 'error'); 
+                }
+            };
+
+            /** Displays the details of the selected quote in the details panel. */
+            const displayOrcamentoDetails = () => {
+                if (!state.orcamentoSelecionado) { 
+                    detalhesContainer.style.display = 'none'; 
+                    return; 
+                }
+                const orc = state.orcamentoSelecionado;
+                const { status } = orc;
+
+                $('#detalhes-orcamento-texto').textContent = generateOrcamentoText(orc);
+                
+                $('#btn-edit-orcamento').style.display = status !== 'Cancelado' ? 'inline-flex' : 'none'; 
+                $('#btn-aprovar').style.display = status === 'Orçamento' ? 'inline-flex' : 'none';
+                $('#btn-finalizar').style.display = status === 'Aprovado' ? 'inline-flex' : 'none';
+                $('#btn-cancelar').style.display = (status === 'Orçamento' || status === 'Aprovado') ? 'inline-flex' : 'none';
+                
+                const reciboBtn = $('#btn-view-recibo');
+                if (status === 'Finalizado') {
+                    $('#detalhes-recibo-texto').textContent = generateReciboText(orc);
+                    reciboBtn.style.display = 'inline-flex';
+                } else {
+                    reciboBtn.style.display = 'none';
+                    switchDetailView('orcamento');
+                }
+                detalhesContainer.style.display = 'block';
+                detalhesContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            /**
+             * Switches between "Orçamento" and "Recibo" view in the details panel.
+             * @param {'orcamento' | 'recibo'} view - The view to activate.
+             */
+            const switchDetailView = (view) => {
+                if (view === 'orcamento') {
+                    $('#detalhe-orcamento-bloco').style.display = 'block';
+                    $('#detalhe-recibo-bloco').style.display = 'none';
+                    $('#btn-view-orcamento').classList.add('active');
+                    $('#btn-view-recibo').classList.remove('active');
+                } else {
+                    $('#detalhe-orcamento-bloco').style.display = 'none';
+                    $('#detalhe-recibo-bloco').style.display = 'block';
+                    $('#btn-view-orcamento').classList.remove('active');
+                    $('#btn-view-recibo').classList.add('active');
+                }
+            };
+
+            /** Populates the New Orcamento form with data from an existing budget for editing. */
+            const populateOrcamentoFormForEdit = (orc) => {
+                state.editandoOrcamentoId = orc.id;
+                orcamentoIdToEditInput.value = orc.id; 
+
+                orcamentoFormTitle.innerHTML = 'Editar Orçamento <i class="fas fa-edit"></i>';
+                orcamentoClienteSelect.value = orc.cliente_id;
+                orcamentoDescontoInput.value = orc.desconto || 0;
+
+                $$('.payment-option').forEach(btn => btn.classList.remove('active'));
+                if (orc.formas_pagamento) {
+                    orc.formas_pagamento.split(', ').forEach(fp => {
+                        const btn = $(`.payment-option[data-value="${fp}"]`);
+                        if (btn) btn.classList.add('active');
+                    });
+                }
+
+                // Ensure orcamento_itens is an array, map to temporary items for editing
+                state.novoOrcamentoItens = Array.isArray(orc.orcamento_itens) ? orc.orcamento_itens.map(item => ({
+                    servico_id: item.servico_id,
+                    descricao_servico: item.descricao_servico,
+                    valor_cobrado: item.valor_cobrado,
+                    quantidade: item.quantidade 
+                })) : [];
+
+                renderNovoOrcamentoItens();
+                updateOrcamentoTotal();
+
+                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Orçamento';
+                cancelarEdicaoOrcamentoBtn.style.display = 'inline-flex';
+            };
+
+            /** Initiates the edit process for a selected quote. */
+            const handleEditOrcamento = () => {
+                if (!state.orcamentoSelecionado) {
+                    showNotification('Nenhum orçamento selecionado para editar.', 'warning');
+                    return;
+                }
+                populateOrcamentoFormForEdit(state.orcamentoSelecionado);
+                showTab('novo-orcamento'); 
+                orcamentoFormTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+
+            /** Updates the status of the selected quote. */
+            const updateStatusOrcamento = async (newStatus) => { 
+                if (!state.orcamentoSelecionado) return; 
+                showConfirmModal(
+                    `Alterar Status para ${newStatus}?`, 
+                    `Tem certeza que deseja mudar o status deste orçamento para "${newStatus}"?`, 
+                    async () => {
+                        try {
+                            const { error } = await db.from('orcamentos').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', state.orcamentoSelecionado.id); 
+                            if (error) throw new Error(error.message); 
+                            
+                            showNotification(`Orçamento ${newStatus.toLowerCase()}!`, 'success'); 
+                            triggerConfetti('success'); 
+                        } catch (error) {
+                            console.error('Erro ao atualizar status:', error);
+                            showNotification(`Erro ao atualizar status: ${error.message}`, 'error'); 
+                        } finally {
+                            hideConfirmModal();
+                        }
+                    }
+                );
+            };
+
+            /** Handles deletion of the selected quote. */
+            const handleDeleteOrcamento = () => showConfirmModal(
+                'Excluir Orçamento', 
+                'Esta ação é irreversível. O orçamento e seus itens serão permanentemente removidos.', 
+                async () => { 
+                    if (!state.orcamentoSelecionado) return; 
+                    try {
+                        const { error } = await db.from('orcamentos').delete().eq('id', state.orcamentoSelecionado.id); 
+                        if (error) throw new Error(error.message); 
+                        
+                        showNotification('Orçamento excluído com sucesso!', 'success'); 
+                        triggerConfetti('success');
+                        state.orcamentoSelecionado = null; 
+                        displayOrcamentoDetails(); 
+                    } catch (error) {
+                        console.error('Erro ao excluir orçamento:', error);
+                        showNotification(`Erro ao excluir orçamento: ${error.message}`, 'error'); 
+                    } finally {
+                        hideConfirmModal(); 
+                    }
+                }
+            );
+            
+            // ===================================================================================
+            // TEXT GENERATION FOR ORÇAMENTO/RECIBO
+            // ===================================================================================
+
+            /** Generates the standard footer for quote/receipt texts. */
+            const generateFooter = () => `
+==================================
+*${ESTABELECIMENTO.nome}*
+📍 ${ESTABELECIMENTO.endereco}
+*📞 Contato:* ${formatPhone(ESTABELECIMENTO.telefone)}
+
+_${ESTABELECIMENTO.agradecimento}_`;
+
+            /**
+             * Generates the detailed quote text.
+             * @param {Object} orc - The selected quote object.
+             * @returns {string} - The formatted quote text.
+             */
+            const generateOrcamentoText = (orc) => { 
+                const subtotal = orc.orcamento_itens.reduce((acc, item) => acc + (parseFloat(item.valor_cobrado) * item.quantidade), 0); 
+                const servicosText = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (x${item.quantidade}) - ${formatCurrency(parseFloat(item.valor_cobrado) * item.quantidade)}`).join('\n'); 
+                
+                return `*Orçamento - ${ESTABELECIMENTO.nome}*
+==================================
+*Data:* ${formatDateTime(orc.created_at)}
+*Cliente:* ${orc.clientes?.nome || 'N/A'}
+*Veículo:* ${orc.clientes?.carro || 'N/A'}
+*Placa:* ${orc.clientes?.placa || 'N/A'}
+
+*SERVIÇOS:*\n${servicosText}
+
+*Subtotal:* ${formatCurrency(subtotal)}
+*Desconto:* ${orc.desconto || 0}%
+*VALOR TOTAL:* ${formatCurrency(orc.valor_total)}
+
+*Formas de Pagamento:* ${orc.formas_pagamento || 'Não especificado'}` + generateFooter(); 
+            };
+
+            /**
+             * Generates the receipt text.
+             * @param {Object} orc - The selected quote object.
+             * @returns {string} - The formatted receipt text.
+             */
+            const generateReciboText = (orc) => { 
+                const servicosText = orc.orcamento_itens.map(item => `- ${item.descricao_servico} (x${item.quantidade})`).join('\n'); 
+                
+                return `*Recibo de Serviço (Não Fiscal)*
+==================================
+*Data da Finalização:* ${formatDateTime(orc.updated_at)}
+*Cliente:* ${orc.clientes?.nome || 'N/A'}
+*Veículo:* ${orc.clientes?.carro || 'N/A'}
+*Placa:* ${orc.clientes?.placa || 'N/A'}
+
+*Serviço(s) Realizado(s):*\n${servicosText}
+
+*Valor Pago:* ${formatCurrency(orc.valor_total)}
+*Forma de Pagamento:* ${orc.formas_pagamento || 'Não especificado'}` + generateFooter(); 
+            };
+            
+            /**
+             * Copies generated text to clipboard and shows notification.
+             * @param {function} textGenerator - Function that generates the text (e.g., generateOrcamentoText).
+             * @param {string} type - Type of text (e.g., "Orçamento", "Recibo").
+             */
+            const copyAndNotify = (textGenerator, type) => { 
+                if (!state.orcamentoSelecionado) {
+                    showNotification(`Nenhum ${type.toLowerCase()} selecionado.`, 'warning');
+                    return;
+                }
+                const text = textGenerator(state.orcamentoSelecionado); 
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification(`${type} copiado!`, 'success');
+                } catch (err) {
+                    console.error('Failed to copy text:', err);
+                    showNotification(`Erro ao copiar ${type}.`, 'error');
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            };
+
+            /**
+             * Opens WhatsApp with pre-filled message.
+             * @param {function} textGenerator - Function that generates the text.
+             */
+            const sendWhatsApp = (textGenerator) => { 
+                if (!state.orcamentoSelecionado) {
+                    showNotification('Nenhum orçamento selecionado.', 'warning');
+                    return;
+                }
+                const text = textGenerator(state.orcamentoSelecionado); 
+                const clientPhone = state.orcamentoSelecionado.clientes?.telefone;
+                const phone = cleanPhone(clientPhone); 
+                
+                let url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`; 
+                if (phone && phone.length > 10) { 
+                    url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`; 
+                } else if (!phone) {
+                    showNotification('Número de telefone do cliente não disponível para WhatsApp.', 'warning');
+                }
+                window.open(url, '_blank'); 
+            };
+
+            // ===================================================================================
+            // INITIALIZATION & EVENT LISTENERS
+            // ===================================================================================
+
+            /** Attaches all event listeners and performs initial data fetch. */
+            const init = () => {
+                // Debounced calls defined here to ensure render functions exist
+                const debouncedRenderClientes = debounce(renderClientes, 300);
+                const debouncedRenderServicos = debounce(renderServicos, 300);
+                const debouncedRenderOrcamentos = debounce(renderOrcamentos, 300);
+
+                // Navigation buttons
+                $$('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+                syncBtn.addEventListener('click', () => fetchAllData(true)); 
+
+                // Clients tab event listeners
+                clienteForm.addEventListener('submit', handleClienteSubmit);
+                $('#cancelar-edicao-cliente').addEventListener('click', resetClienteForm);
+                clientesLista.addEventListener('click', (e) => { 
+                    const listItem = e.target.closest('li[data-id]');
+                    if (!listItem) return;
+                    const id = listItem.dataset.id;
+                    if (e.target.closest('.edit-cliente-btn')) handleEditCliente(id); 
+                    if (e.target.closest('.delete-cliente-btn')) handleDeleteCliente(id); 
+                });
+                searchClienteInput.addEventListener('input', debouncedRenderClientes);
+                clienteNomeInput.addEventListener('input', () => handleValidationIcon(clienteNomeInput));
+                clienteTelefoneInput.addEventListener('input', (e) => { 
+                    e.target.value = formatPhone(e.target.value); 
+                    handleValidationIcon(e.target);
+                });
+                clientePlacaInput.addEventListener('input', (e) => {
+                    // Remove any non-alphanumeric chars first, then convert to uppercase
+                    let val = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase(); 
+                    if (val.length > 7) val = val.slice(0, 7); // Max 7 chars (Mercosul or old format)
+
+                    // Auto-insert hyphen for old format (AAA-1234)
+                    if (val.length === 7 && /^[A-Z]{3}\d{4}$/.test(val)) { 
+                        val = val.replace(/^([A-Z]{3})(\d{4})$/, '$1-$2');
+                    }
+                    // Auto-insert hyphen for Mercosul (AAA1B23)
+                    else if (val.length === 7 && /^[A-Z]{3}\d[A-Z]\d{2}$/.test(val)) {
+                         val = val.replace(/^([A-Z]{3}\d)([A-Z])(\d{2})$/, '$1$2-$3');
+                    }
+                    e.target.value = val;
+                    handleValidationIcon(e.target);
+                });
+
+                $('#export-clientes-csv').addEventListener('click', () => exportToCsv(state.clientes, 'clientes.csv'));
+
+                // Services tab event listeners
+                servicoForm.addEventListener('submit', handleServicoSubmit);
+                $('#cancelar-edicao-servico').addEventListener('click', resetServicoForm);
+                servicosLista.addEventListener('click', (e) => { 
+                    const listItem = e.target.closest('li[data-id]');
+                    if (!listItem) return;
+                    const id = listItem.dataset.id;
+                    if (e.target.closest('.edit-servico-btn')) handleEditServico(id); 
+                    if (e.target.closest('.delete-servico-btn')) handleDeleteServico(id); 
+                });
+                searchServicoInput.addEventListener('input', debouncedRenderServicos);
+                servicoDescricaoInput.addEventListener('input', () => handleValidationIcon(servicoDescricaoInput));
+                servicoValorInput.addEventListener('input', () => handleValidationIcon(servicoValorInput));
+                $('#export-servicos-csv').addEventListener('click', () => exportToCsv(state.servicos, 'servicos.csv'));
+
+                // New Orcamento tab event listeners
+                addServicoBtn.addEventListener('click', handleAddServicoToOrcamento);
+                orcamentoServicosAdicionados.addEventListener('click', (e) => { 
+                    if (e.target.classList.contains('remove-servico-btn')) {
+                        handleRemoveServicoFromOrcamento(e.target.dataset.index); 
+                    }
+                });
+                orcamentoDescontoInput.addEventListener('input', updateOrcamentoTotal);
+                orcamentoForm.addEventListener('submit', handleOrcamentoSubmit);
+                paymentOptionsContainer.addEventListener('click', (e) => { 
+                    if (e.target.classList.contains('payment-option')) {
+                        e.target.classList.toggle('active'); 
+                        // If at least one is active, hide validation message
+                        if (Array.from($$('.payment-option.active')).length > 0) {
+                            paymentOptionsValidation.style.display = 'none'; 
+                        }
+                    }
+                });
+                cancelarEdicaoOrcamentoBtn.addEventListener('click', resetOrcamentoForm);
+
+
+                // Historico tab event listeners
+                historicoLista.addEventListener('click', (e) => { 
+                    const li = e.target.closest('li[data-id]'); 
+                    if (li?.dataset.id) handleHistoricoClick(li.dataset.id); 
+                });
+                recentActivityList.addEventListener('click', (e) => { 
+                    const li = e.target.closest('li[data-id]'); 
+                    if(li) { 
+                        showTab('historico'); 
+                        setTimeout(() => handleHistoricoClick(li.dataset.id), 50); 
+                    }
+                });
+                searchHistoricoInput.addEventListener('input', debouncedRenderOrcamentos);
+                filterStatusSelect.addEventListener('change', renderOrcamentos);
+                filterStartDateInput.addEventListener('change', renderOrcamentos);
+                filterEndDateInput.addEventListener('change', renderOrcamentos);
+                clearFiltersBtn.addEventListener('click', () => {
+                    searchHistoricoInput.value = '';
+                    filterStatusSelect.value = '';
+                    filterStartDateInput.value = '';
+                    filterEndDateInput.value = '';
+                    renderOrcamentos();
+                });
+                
+                // Orcamento details actions
+                $('#btn-edit-orcamento').addEventListener('click', handleEditOrcamento);
+                $('#btn-aprovar').addEventListener('click', () => updateStatusOrcamento('Aprovado'));
+                $('#btn-finalizar').addEventListener('click', () => updateStatusOrcamento('Finalizado'));
+                $('#btn-cancelar').addEventListener('click', () => updateStatusOrcamento('Cancelado'));
+                $('#btn-excluir-orcamento').addEventListener('click', handleDeleteOrcamento);
+                
+                $('#btn-view-orcamento').addEventListener('click', () => switchDetailView('orcamento'));
+                $('#btn-view-recibo').addEventListener('click', () => switchDetailView('recibo'));
+
+                $('#btn-copiar-orcamento').addEventListener('click', () => copyAndNotify(generateOrcamentoText, 'Orçamento'));
+                $('#btn-whatsapp-orcamento').addEventListener('click', () => sendWhatsApp(generateOrcamentoText));
+                $('#btn-copiar-recibo').addEventListener('click', () => copyAndNotify(generateReciboText, 'Recibo'));
+                $('#btn-whatsapp-recibo').addEventListener('click', () => sendWhatsApp(generateReciboText));
+                
+                // Global modal confirm/cancel
+                modalCancelBtn.addEventListener('click', hideConfirmModal);
+                modalConfirmBtn.addEventListener('click', () => { 
+                    if (typeof onConfirmCallback === 'function') onConfirmCallback(); 
+                });
+                
+                // Back to Top Button Logic
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 400) { 
+                        backToTopBtn.classList.add('show');
+                    } else {
+                        backToTopBtn.classList.remove('show');
+                    }
+                });
+                backToTopBtn.addEventListener('click', () => { 
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                // Initial load: show dashboard, setup listeners, and fetch all data
+                showTab('dashboard');
+                setupSupabaseListeners(); 
+                fetchAllData(true); 
+            };
+
+            // Run the initialization function when DOM is ready
+            init();
+        });
+    </script>
+</body>
+</html>
