@@ -14,6 +14,13 @@
     <!-- Importa o cliente Supabase via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+
+    <!-- jsPDF para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js"></script>
+
     <!-- Estilos CSS -->
     <style>
         :root {
@@ -290,13 +297,11 @@
         .form-group input:invalid:not(:focus):not(:placeholder-shown) + .validation-message + .validation-icon {
             color: var(--accent-red-status);
         }
-        .form-group input:not(:required):not(:focus) + .validation-message + .validation-icon,
+        .form-group select + .validation-message + .validation-icon,
+        .form-group input:not(:required) + .validation-message + .validation-icon,
         .form-group input:focus + .validation-message + .validation-icon,
         .form-group input:placeholder-shown + .validation-message + .validation-icon {
              display: none; 
-        }
-        .form-group select + .validation-message + .validation-icon {
-            top: 60%;
         }
 
 
@@ -417,6 +422,9 @@
             transition: border-left-color 0.3s ease, background-color 0.3s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        .data-list li.editing {
+            border-left: 5px solid var(--accent-orange); /* Highlight editing row */
+        }
         .data-list li:hover { 
             border-left-color: var(--primary-red); 
             background-color: #2b3a4e; 
@@ -444,6 +452,33 @@
             flex-shrink: 0; 
             align-items: center; 
         }
+        /* Inline editing input */
+        .inline-edit-input {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 5px 8px;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin: -5px 0; /* Adjust to align with text */
+        }
+        .inline-edit-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        /* Hide text spans when editing */
+        .data-list li.editing span[data-field], .data-list li.editing strong[data-field] {
+            display: none;
+        }
+        /* Show input fields when editing */
+        .data-list li .edit-mode-input {
+            display: none; /* Hidden by default */
+        }
+        .data-list li.editing .edit-mode-input {
+            display: inline-block; /* Show when editing */
+        }
+
 
         /* Quantity input for orcamento items */
         .orcamento-item-quantity {
@@ -622,15 +657,17 @@
         }
         .stat-card { 
             background-color: var(--bg-card); 
-            border-radius: 12px; 
             padding: 25px; 
-            text-align: center; 
+            border-radius: 12px; 
             border: 1px solid var(--border-color); 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease; /* Add box-shadow to transition */
+            cursor: pointer; /* Indicate clickable */
+            text-align: center; 
         }
         .stat-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Stronger shadow on hover */
         }
         .stat-card .icon { 
             font-size: 3rem; 
@@ -952,247 +989,375 @@
             flex-grow: 1;
             min-width: 120px;
         }
+
+        /* Client Details Panel */
+        .client-details-panel {
+            background-color: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 15px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            margin-top: 25px;
+            display: none; /* Hidden by default */
+            animation: fadeInScale 0.6s ease-out; 
+        }
+        .client-details-panel h2 {
+            margin-top: 0; 
+            margin-bottom: 25px; 
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue); 
+            padding-bottom: 12px; 
+            font-size: 1.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .client-details-panel .detail-item {
+            margin-bottom: 10px;
+        }
+        .client-details-panel .detail-item strong {
+            color: var(--text-light);
+            margin-right: 5px;
+        }
+        .client-details-panel .detail-item span {
+            color: var(--text-muted);
+        }
+        .client-details-panel .section-title {
+            font-size: 1.3rem;
+            color: var(--primary-red);
+            margin-top: 20px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        .client-details-panel .past-orcamento-list li {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .client-details-panel .past-orcamento-list li:hover {
+            background-color: var(--bg-input);
+        }
+        .client-details-panel .past-orcamento-list li strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .client-details-panel .close-details-btn {
+            background-color: var(--accent-red-status);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            float: right; /* Position to top right */
+            margin-top: -5px; /* Adjust as needed */
+        }
+        .client-details-panel .close-details-btn:hover {
+            background-color: var(--primary-red-dark);
+        }
+        
     </style>
 </head>
 <body>
 
-    <div id="offline-indicator">Você está offline. Conecte-se para sincronizar os dados.</div>
+    <div id="offline-indicator" role="alert" aria-live="assertive">Você está offline. Conecte-se para sincronizar os dados.</div>
 
     <div class="app-container">
         <header>
-            <h1><i class="fas fa-car-wash"></i> R.M. Estética PRO+</h1>
-            <button class="sync-btn" id="sync-btn" title="Sincronizar Dados Manualmente"><i class="fas fa-sync-alt"></i></button>
+            <h1><i class="fas fa-car-wash" aria-hidden="true"></i> R.M. Estética PRO+</h1>
+            <button class="sync-btn" id="sync-btn" title="Sincronizar Dados Manualmente" aria-label="Sincronizar Dados Manualmente"><i class="fas fa-sync-alt" aria-hidden="true"></i></button>
         </header>
 
-        <nav>
-            <button class="nav-btn active" data-tab="dashboard"><i class="fas fa-chart-line"></i> Painel</button>
-            <button class="nav-btn" data-tab="clientes"><i class="fas fa-users"></i> Clientes</button>
-            <button class="nav-btn" data-tab="servicos"><i class="fas fa-tools"></i> Serviços</button>
-            <button class="nav-btn" data-tab="novo-orcamento"><i class="fas fa-file-invoice"></i> Orçamento</button>
-            <button class="nav-btn" data-tab="historico"><i class="fas fa-history"></i> Histórico</button>
+        <nav role="navigation" aria-label="Navegação Principal">
+            <button class="nav-btn active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="dashboard-tab"><i class="fas fa-chart-line" aria-hidden="true"></i> Painel</button>
+            <button class="nav-btn" data-tab="clientes" role="tab" aria-selected="false" aria-controls="clientes-tab"><i class="fas fa-users" aria-hidden="true"></i> Clientes</button>
+            <button class="nav-btn" data-tab="servicos" role="tab" aria-selected="false" aria-controls="servicos-tab"><i class="fas fa-tools" aria-hidden="true"></i> Serviços</button>
+            <button class="nav-btn" data-tab="novo-orcamento" role="tab" aria-selected="false" aria-controls="novo-orcamento-tab"><i class="fas fa-file-invoice" aria-hidden="true"></i> Orçamento</button>
+            <button class="nav-btn" data-tab="historico" role="tab" aria-selected="false" aria-controls="historico-tab"><i class="fas fa-history" aria-hidden="true"></i> Histórico</button>
         </nav>
 
         <main>
-            <section id="dashboard-tab" class="tab-content active">
+            <section id="dashboard-tab" class="tab-content active" role="tabpanel">
                 <div class="dashboard-main-grid">
-                    <div class="card">
-                        <h2>Visão Geral <i class="fas fa-tachometer-alt"></i></h2>
-                        <div class="dashboard-grid" id="dashboard-stats-container">
-                            <!-- Stat cards will be loaded here or replaced by skeleton loaders -->
-                        </div>
-                        <div class="monthly-stats-chart">
-                            <h3>Serviços Finalizados por Mês <i class="fas fa-chart-bar"></i></h3>
-                            <div id="monthly-finalized-chart" class="chart-bars">
-                                <!-- Chart bars will be rendered here by JS or skeleton -->
-                            </div>
-                        </div>
+                    <!-- Dashboard cards are now clickable -->
+                    <div class="stat-card" data-target-tab="clientes" data-filter-type="none" tabindex="0" role="button" aria-label="Ver todos os clientes">
+                        <div class="icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+                        <h3>Clientes</h3>
+                        <p id="stat-clientes"></p>
                     </div>
-                    <div class="card data-list">
-                        <h2>Atividade Recente <i class="fas fa-bolt"></i></h2>
-                        <ul id="recent-activity-list">
-                            <!-- Recent activity items or skeleton loaders -->
-                        </ul>
+                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Orçamento" tabindex="0" role="button" aria-label="Ver orçamentos pendentes">
+                        <div class="icon"><i class="fas fa-hourglass-half" aria-hidden="true"></i></div>
+                        <h3>Pendentes</h3>
+                        <p id="stat-pendentes"></p>
                     </div>
+                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Aprovado" tabindex="0" role="button" aria-label="Ver orçamentos aprovados">
+                        <div class="icon"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
+                        <h3>Aprovados</h3>
+                        <p id="stat-aprovados"></p>
+                    </div>
+                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Finalizado" tabindex="0" role="button" aria-label="Ver orçamentos finalizados este mês">
+                        <div class="icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></div>
+                        <h3>Finalizados Mês</h3>
+                        <p id="stat-finalizados-mes"></p>
+                    </div>
+                    <div class="stat-card" data-target-tab="historico" data-filter-type="status" data-filter-value="Finalizado" tabindex="0" role="button" aria-label="Ver faturamento total" style="grid-column: span 2;">
+                        <div class="icon"><i class="fas fa-dollar-sign" aria-hidden="true"></i></div>
+                        <h3>Faturamento Total</h3>
+                        <p id="stat-faturamento-total"></p>
+                    </div>
+                </div>
+                <div class="monthly-stats-chart">
+                    <h3>Serviços Finalizados por Mês <i class="fas fa-chart-bar" aria-hidden="true"></i></h3>
+                    <div id="monthly-finalized-chart" class="chart-bars">
+                        <!-- Chart.js canvas will be rendered here -->
+                    </div>
+                </div>
+                <div class="card data-list" style="margin-top: 25px;">
+                    <h2>Atividade Recente <i class="fas fa-bolt" aria-hidden="true"></i></h2>
+                    <ul id="recent-activity-list" role="list">
+                        <!-- Recent activity items or skeleton loaders -->
+                    </ul>
                 </div>
             </section>
             
-            <section id="clientes-tab" class="tab-content">
+            <section id="clientes-tab" class="tab-content" role="tabpanel">
                  <div class="grid-layout">
                     <div class="card">
-                        <h2 id="cliente-form-title">Novo Cliente <i class="fas fa-user-plus"></i></h2>
+                        <h2 id="cliente-form-title">Novo Cliente <i class="fas fa-user-plus" aria-hidden="true"></i></h2>
                         <form id="cliente-form">
                             <input type="hidden" id="cliente-id">
                             <div class="form-group">
                                 <label for="cliente-nome">Nome Completo</label>
-                                <input type="text" id="cliente-nome" required>
-                                <span class="validation-message">O nome do cliente é obrigatório.</span>
-                                <i class="validation-icon fas"></i>
+                                <input type="text" id="cliente-nome" required aria-required="true" aria-label="Nome Completo do Cliente">
+                                <span class="validation-message" aria-live="polite">O nome do cliente é obrigatório.</span>
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
                             <div class="form-group">
                                 <label for="cliente-telefone">Telefone (WhatsApp)</label>
-                                <input type="tel" id="cliente-telefone" placeholder="(XX) XXXXX-XXXX">
-                                <span class="validation-message">Formato de telefone inválido. Ex: (XX) XXXXX-XXXX</span>
-                                <i class="validation-icon fas"></i>
+                                <input type="tel" id="cliente-telefone" placeholder="(XX) XXXXX-XXXX" aria-label="Telefone do Cliente com WhatsApp">
+                                <span class="validation-message" aria-live="polite">Formato de telefone inválido. Ex: (XX) XXXXX-XXXX</span>
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
                             <div class="form-group">
                                 <label for="cliente-carro">Veículo</label>
-                                <input type="text" id="cliente-carro" placeholder="Ex: Honda Civic, Chevrolet Onix">
-                                <i class="validation-icon fas"></i>
+                                <input type="text" id="cliente-carro" placeholder="Ex: Honda Civic, Chevrolet Onix" aria-label="Modelo do Veículo do Cliente">
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
                             <div class="form-group">
                                 <label for="cliente-placa">Placa</label>
-                                <input type="text" id="cliente-placa" placeholder="Ex: ABC-1234 (antiga) ou ABC1D23 (Mercosul)">
-                                <span class="validation-message">Formato de placa inválido.</span>
-                                <i class="validation-icon fas"></i>
+                                <input type="text" id="cliente-placa" placeholder="Ex: ABC-1234 (antiga) ou ABC1D23 (Mercosul)" aria-label="Placa do Veículo do Cliente">
+                                <span class="validation-message" aria-live="polite">Formato de placa inválido.</span>
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
-                            <button type="button" id="cancelar-edicao-cliente" class="btn btn-secondary" style="display: none;"><i class="fas fa-times-circle"></i> Cancelar</button>
+                            <button type="submit" class="btn btn-primary" aria-label="Salvar Cliente"><i class="fas fa-save" aria-hidden="true"></i> Salvar</button>
+                            <button type="button" id="cancelar-edicao-cliente" class="btn btn-secondary" style="display: none;" aria-label="Cancelar Edição de Cliente"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar</button>
                         </form>
                     </div>
                     <div class="card data-list">
-                        <h2>Clientes Cadastrados <i class="fas fa-users"></i></h2>
+                        <h2>Clientes Cadastrados <i class="fas fa-users" aria-hidden="true"></i></h2>
                         <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="search" id="search-cliente" placeholder="Buscar cliente por nome ou placa...">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input type="search" id="search-cliente" placeholder="Buscar cliente por nome ou placa..." aria-label="Pesquisar Cliente">
                         </div>
-                        <ul id="clientes-lista">
+                        <div style="margin-bottom: 15px;">
+                            <label for="sort-clientes" style="display: block; margin-bottom: 5px; color: var(--text-muted);">Ordenar por:</label>
+                            <select id="sort-clientes" style="width: 100%; padding: 8px; border-radius: 5px; background-color: var(--bg-input); color: var(--text-light);" aria-label="Ordenar Clientes por">
+                                <option value="nome_asc">Nome (A-Z)</option>
+                                <option value="nome_desc">Nome (Z-A)</option>
+                                <option value="carro_asc">Veículo (A-Z)</option>
+                                <option value="placa_asc">Placa (A-Z)</option>
+                            </select>
+                        </div>
+                        <ul id="clientes-lista" role="list">
                             <!-- Client list items or skeleton loaders -->
                         </ul>
                         <div class="export-actions">
-                            <button id="export-clientes-csv" class="btn btn-sm btn-secondary"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                            <button id="export-clientes-csv" class="btn btn-sm btn-secondary" aria-label="Exportar Clientes para CSV"><i class="fas fa-file-csv" aria-hidden="true"></i> Exportar CSV</button>
                         </div>
                     </div>
+                 </div>
+                 <!-- NEW: Client Details Panel -->
+                <div id="client-details-panel" class="client-details-panel">
+                    <button class="close-details-btn" aria-label="Fechar Detalhes do Cliente"><i class="fas fa-times" aria-hidden="true"></i></button>
+                    <h2>Detalhes do Cliente <i class="fas fa-user-circle" aria-hidden="true"></i></h2>
+                    <div class="client-info">
+                        <div class="detail-item"><strong>Nome:</strong> <span id="client-detail-name"></span></div>
+                        <div class="detail-item"><strong>Telefone:</strong> <span id="client-detail-phone"></span></div>
+                        <div class="detail-item"><strong>Veículo:</strong> <span id="client-detail-car"></span></div>
+                        <div class="detail-item"><strong>Placa:</strong> <span id="client-detail-plate"></span></div>
+                    </div>
+                    
+                    <h3 class="section-title">Histórico de Orçamentos <i class="fas fa-history" aria-hidden="true"></i></h3>
+                    <ul id="client-past-orcamentos" class="data-list past-orcamento-list" role="list">
+                        <!-- Past budgets for this client will be loaded here -->
+                    </ul>
                 </div>
             </section>
             
-            <section id="servicos-tab" class="tab-content">
+            <section id="servicos-tab" class="tab-content" role="tabpanel">
                  <div class="grid-layout">
                     <div class="card">
-                        <h2 id="servico-form-title">Novo Serviço <i class="fas fa-clipboard-list"></i></h2>
+                        <h2 id="servico-form-title">Novo Serviço <i class="fas fa-clipboard-list" aria-hidden="true"></i></h2>
                         <form id="servico-form">
                             <input type="hidden" id="servico-id">
                             <div class="form-group">
                                 <label for="servico-descricao">Descrição</label>
-                                <input type="text" id="servico-descricao" required placeholder="Ex: Polimento Técnico, Lavagem Detalhada">
-                                <span class="validation-message">A descrição do serviço é obrigatória.</span>
-                                <i class="validation-icon fas"></i>
+                                <input type="text" id="servico-descricao" required aria-required="true" aria-label="Descrição do Serviço">
+                                <span class="validation-message" aria-live="polite">A descrição do serviço é obrigatória.</span>
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
                             <div class="form-group">
                                 <label for="servico-valor">Valor (R$)</label>
-                                <input type="number" id="servico-valor" step="0.01" required min="0.01" placeholder="Ex: 150.00">
-                                <span class="validation-message">O valor do serviço deve ser um número positivo.</span>
-                                <i class="validation-icon fas"></i>
+                                <input type="number" id="servico-valor" step="0.01" required min="0.01" placeholder="Ex: 150.00" aria-required="true" aria-label="Valor do Serviço">
+                                <span class="validation-message" aria-live="polite">O valor do serviço deve ser um número positivo.</span>
+                                <i class="validation-icon fas" aria-hidden="true"></i>
                             </div>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
-                            <button type="button" id="cancelar-edicao-servico" class="btn btn-secondary" style="display: none;"><i class="fas fa-times-circle"></i> Cancelar</button>
+                            <button type="submit" class="btn btn-primary" aria-label="Salvar Serviço"><i class="fas fa-save" aria-hidden="true"></i> Salvar</button>
+                            <button type="button" id="cancelar-edicao-servico" class="btn btn-secondary" style="display: none;" aria-label="Cancelar Edição de Serviço"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar</button>
                         </form>
                     </div>
                      <div class="card data-list">
-                        <h2>Serviços Cadastrados <i class="fas fa-tools"></i></h2>
+                        <h2>Serviços Cadastrados <i class="fas fa-tools" aria-hidden="true"></i></h2>
                         <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="search" id="search-servico" placeholder="Buscar serviço por descrição...">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input type="search" id="search-servico" placeholder="Buscar serviço por descrição..." aria-label="Pesquisar Serviço">
                         </div>
-                        <ul id="servicos-lista">
+                        <div style="margin-bottom: 15px;">
+                            <label for="sort-servicos" style="display: block; margin-bottom: 5px; color: var(--text-muted);">Ordenar por:</label>
+                            <select id="sort-servicos" style="width: 100%; padding: 8px; border-radius: 5px; background-color: var(--bg-input); color: var(--text-light);" aria-label="Ordenar Serviços por">
+                                <option value="descricao_asc">Descrição (A-Z)</option>
+                                <option value="descricao_desc">Descrição (Z-A)</option>
+                                <option value="valor_asc">Valor (Menor p/ Maior)</option>
+                                <option value="valor_desc">Valor (Maior p/ Menor)</option>
+                            </select>
+                        </div>
+                        <ul id="servicos-lista" role="list">
                             <!-- Service list items or skeleton loaders -->
                         </ul>
                          <div class="export-actions">
-                            <button id="export-servicos-csv" class="btn btn-sm btn-secondary"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                            <button id="export-servicos-csv" class="btn btn-sm btn-secondary" aria-label="Exportar Serviços para CSV"><i class="fas fa-file-csv" aria-hidden="true"></i> Exportar CSV</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section id="novo-orcamento-tab" class="tab-content">
+            <section id="novo-orcamento-tab" class="tab-content" role="tabpanel">
                 <div class="card">
-                    <h2 id="orcamento-form-title">Criar Novo Orçamento <i class="fas fa-file-invoice-dollar"></i></h2>
+                    <h2 id="orcamento-form-title">Criar Novo Orçamento <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></h2>
                     <form id="orcamento-form">
                         <input type="hidden" id="orcamento-id-to-edit">
                         <div class="form-group">
                             <label for="orcamento-cliente">Cliente</label>
-                            <select id="orcamento-cliente" required>
+                            <select id="orcamento-cliente" required aria-required="true" aria-label="Selecionar Cliente para Orçamento">
                                 <option value="">Carregando clientes...</option>
                             </select>
-                            <span class="validation-message">Selecione um cliente.</span>
-                            <i class="validation-icon fas"></i>
+                            <span class="validation-message" aria-live="polite">Selecione um cliente.</span>
+                            <i class="validation-icon fas" aria-hidden="true"></i>
                         </div>
                         <div class="form-group">
                             <label for="orcamento-servico-select">Adicionar Serviço</label>
                             <div style="display: flex; gap: 10px;">
-                                <select id="orcamento-servico-select" style="flex-grow: 1;">
+                                <select id="orcamento-servico-select" style="flex-grow: 1;" aria-label="Selecionar Serviço para Adicionar">
                                     <option value="">Carregando serviços...</option>
                                 </select>
-                                <input type="number" id="orcamento-servico-quantidade" min="1" value="1" style="width: 80px; text-align: center;">
-                                <button type="button" id="add-servico-btn" class="btn btn-primary btn-sm" style="width: 50px;" disabled><i class="fas fa-plus"></i></button>
+                                <input type="number" id="orcamento-servico-quantidade" min="1" value="1" style="width: 80px; text-align: center;" aria-label="Quantidade do Serviço">
+                                <button type="button" id="add-servico-btn" class="btn btn-primary btn-sm" disabled aria-label="Adicionar Serviço"><i class="fas fa-plus" aria-hidden="true"></i></button>
                             </div>
                         </div>
-                        <h3>Serviços Adicionados <i class="fas fa-list-ul"></i></h3>
+                        <h3>Serviços Adicionados <i class="fas fa-list-ul" aria-hidden="true"></i></h3>
                         <div class="data-list">
-                            <ul id="orcamento-servicos-adicionados" style="min-height: 80px;">
+                            <ul id="orcamento-servicos-adicionados" style="min-height: 80px;" role="list">
                                 <div class="empty-list-message" style="border: none; background: transparent; padding: 20px 0;">
-                                    <p style="font-size: 1rem;"><i class="fas fa-info-circle"></i> Nenhum serviço adicionado.</p>
+                                    <p style="font-size: 1rem;"><i class="fas fa-info-circle" aria-hidden="true"></i> Nenhum serviço adicionado.</p>
                                     <small>Selecione um serviço acima e clique no '+' para adicionar.</small>
                                 </div>
                             </ul>
                         </div>
                         <div class="form-group" style="margin-top: 20px;">
                             <label for="orcamento-desconto">Desconto (%)</label>
-                            <input type="number" id="orcamento-desconto" value="0" min="0" max="100" placeholder="0-100">
+                            <input type="number" id="orcamento-desconto" value="0" min="0" max="100" placeholder="0-100" aria-label="Percentagem de Desconto">
                         </div>
                         <div class="form-group">
                             <label>Formas de Pagamento</label>
-                            <div class="payment-options-group" id="payment-options">
+                            <div class="payment-options-group" id="payment-options" role="group" aria-label="Formas de Pagamento">
                                 <button type="button" class="payment-option" data-value="Pix">Pix</button>
                                 <button type="button" class="payment-option" data-value="Dinheiro">Dinheiro</button>
                                 <button type="button" class="payment-option" data-value="Crédito">Crédito</button>
                                 <button type="button" class="payment-option" data-value="Débito">Débito</button>
                                 <button type="button" class="payment-option" data-value="Boleto">Boleto</button>
                             </div>
-                            <span id="payment-options-validation" class="validation-message" style="display: none;">Selecione ao menos uma forma de pagamento.</span>
+                            <span id="payment-options-validation" class="validation-message" aria-live="polite" style="display: none;">Selecione ao menos uma forma de pagamento.</span>
                         </div>
-                        <div id="orcamento-total">TOTAL: R$ 0,00</div>
-                        <button type="submit" class="btn btn-primary" id="submit-orcamento-btn" style="margin-top: 25px;"><i class="fas fa-save"></i> Salvar Orçamento</button>
-                        <button type="button" id="cancelar-edicao-orcamento" class="btn btn-secondary" style="display: none; margin-top: 10px;"><i class="fas fa-times-circle"></i> Cancelar Edição</button>
+                        <div id="orcamento-total" aria-live="polite">TOTAL: R$ 0,00</div>
+                        <button type="submit" class="btn btn-primary" id="submit-orcamento-btn" aria-label="Salvar Orçamento"><i class="fas fa-save" aria-hidden="true"></i> Salvar Orçamento</button>
+                        <button type="button" id="cancelar-edicao-orcamento" class="btn btn-secondary" style="display: none;" aria-label="Cancelar Edição do Orçamento"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar Edição</button>
                     </form>
                 </div>
             </section>
 
-            <section id="historico-tab" class="tab-content">
+            <section id="historico-tab" class="tab-content" role="tabpanel">
                 <div class="historico-layout">
                     <div class="card data-list">
-                        <h2>Histórico de Serviços <i class="fas fa-folder-open"></i></h2>
+                        <h2>Histórico de Serviços <i class="fas fa-folder-open" aria-hidden="true"></i></h2>
                         <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="search" id="search-historico" placeholder="Buscar por cliente, placa ou data...">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input type="search" id="search-historico" placeholder="Buscar por cliente, placa ou data..." aria-label="Pesquisar Histórico">
                         </div>
-                        <div class="filter-options">
-                            <select id="filter-status">
+                        <div class="filter-options" role="group" aria-label="Opções de Filtro de Histórico">
+                            <select id="filter-status" aria-label="Filtrar por Status">
                                 <option value="">Todos os Status</option>
                                 <option value="Orçamento">Orçamento</option>
                                 <option value="Aprovado">Aprovado</option>
                                 <option value="Finalizado">Finalizado</option>
                                 <option value="Cancelado">Cancelado</option>
                             </select>
-                            <input type="date" id="filter-start-date" title="Data Inicial">
-                            <input type="date" id="filter-end-date" title="Data Final">
-                            <button id="clear-filters-btn" class="btn btn-sm btn-secondary"><i class="fas fa-filter-slash"></i> Limpar Filtros</button>
+                            <input type="date" id="filter-start-date" title="Data Inicial" aria-label="Data Inicial do Filtro">
+                            <input type="date" id="filter-end-date" title="Data Final" aria-label="Data Final do Filtro">
+                            <button id="clear-filters-btn" class="btn btn-sm btn-secondary" aria-label="Limpar Filtros"><i class="fas fa-filter-slash" aria-hidden="true"></i> Limpar Filtros</button>
                         </div>
-                        <ul id="historico-lista">
+                        <ul id="historico-lista" role="list">
                             <!-- History list items or skeleton loaders -->
                         </ul>
                     </div>
                     <div class="card" id="detalhes-orcamento-container" style="display: none;">
-                        <h2>Detalhes do Serviço <i class="fas fa-info-circle"></i></h2>
+                        <h2>Detalhes do Serviço <i class="fas fa-info-circle" aria-hidden="true"></i></h2>
                         
-                        <div class="detalhe-view-switcher">
-                            <button id="btn-view-orcamento" class="detalhe-view-btn active"><i class="fas fa-file-alt"></i> Orçamento</button>
-                            <button id="btn-view-recibo" class="detalhe-view-btn" style="display: none;"><i class="fas fa-receipt"></i> Recibo</button>
+                        <div class="detalhe-view-switcher" role="tablist" aria-label="Visualização de Detalhes do Orçamento">
+                            <button id="btn-view-orcamento" class="detalhe-view-btn active" role="tab" aria-selected="true" aria-controls="detalhe-orcamento-bloco"><i class="fas fa-file-alt" aria-hidden="true"></i> Orçamento</button>
+                            <button id="btn-view-recibo" class="detalhe-view-btn" style="display: none;" role="tab" aria-selected="false" aria-controls="detalhe-recibo-bloco"><i class="fas fa-receipt" aria-hidden="true"></i> Recibo</button>
                         </div>
                         
-                        <div id="detalhe-orcamento-bloco" class="detalhe-bloco">
-                           <h3>Texto do Orçamento <i class="fas fa-scroll"></i></h3>
-                           <pre id="detalhes-orcamento-texto"></pre>
+                        <div id="detalhe-orcamento-bloco" class="detalhe-bloco" role="tabpanel" aria-labelledby="btn-view-orcamento">
+                           <h3>Texto do Orçamento <i class="fas fa-scroll" aria-hidden="true"></i></h3>
+                           <pre id="detalhes-orcamento-texto" tabindex="0"></pre>
                            <div class="detalhe-bloco-actions">
-                               <button id="btn-copiar-orcamento" class="btn btn-sm btn-secondary"><i class="fas fa-copy"></i> Copiar</button>
-                               <button id="btn-whatsapp-orcamento" class="btn btn-sm btn-success"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                               <button id="btn-copiar-orcamento" class="btn btn-sm btn-secondary" aria-label="Copiar Texto do Orçamento"><i class="fas fa-copy" aria-hidden="true"></i> Copiar</button>
+                               <button id="btn-whatsapp-orcamento" class="btn btn-sm btn-success" aria-label="Enviar Orçamento por WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp</button>
+                               <button id="btn-download-orcamento-pdf" class="btn btn-sm btn-secondary" aria-label="Baixar Orçamento em PDF"><i class="fas fa-file-pdf" aria-hidden="true"></i> Download PDF</button>
                            </div>
                         </div>
 
-                        <div id="detalhe-recibo-bloco" class="detalhe-bloco" style="display: none;">
-                            <h3>Texto do Recibo de Serviço <i class="fas fa-money-bill-alt"></i></h3>
-                            <pre id="detalhes-recibo-texto"></pre>
+                        <div id="detalhe-recibo-bloco" class="detalhe-bloco" style="display: none;" role="tabpanel" aria-labelledby="btn-view-recibo">
+                            <h3>Texto do Recibo de Serviço <i class="fas fa-money-bill-alt" aria-hidden="true"></i></h3>
+                            <pre id="detalhes-recibo-texto" tabindex="0"></pre>
                             <div class="detalhe-bloco-actions">
-                                <button id="btn-copiar-recibo" class="btn btn-sm btn-secondary"><i class="fas fa-copy"></i> Copiar</button>
-                                <button id="btn-whatsapp-recibo" class="btn btn-sm btn-success"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                                <button id="btn-copiar-recibo" class="btn btn-sm btn-secondary" aria-label="Copiar Texto do Recibo"><i class="fas fa-copy" aria-hidden="true"></i> Copiar</button>
+                                <button id="btn-whatsapp-recibo" class="btn btn-sm btn-success" aria-label="Enviar Recibo por WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp</button>
+                                <button id="btn-download-recibo-pdf" class="btn btn-sm btn-secondary" aria-label="Baixar Recibo em PDF"><i class="fas fa-file-pdf" aria-hidden="true"></i> Download PDF</button>
                            </div>
                         </div>
 
-                        <div class="detalhes-status-actions">
-                             <button id="btn-edit-orcamento" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> Editar</button>
-                             <button id="btn-aprovar" class="btn btn-sm" style="background-color: var(--accent-orange)"><i class="fas fa-thumbs-up"></i> Aprovar</button>
-                             <button id="btn-finalizar" class="btn btn-sm" style="background-color: var(--accent-green)"><i class="fas fa-check-double"></i> Finalizar</button>
-                             <button id="btn-cancelar" class="btn btn-sm" style="background-color: var(--accent-red-status);"><i class="fas fa-times-circle"></i> Cancelar</button>
-                             <button id="btn-excluir-orcamento" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Excluir</button>
+                        <div class="detalhes-status-actions" role="group" aria-label="Ações de Status do Serviço">
+                             <button id="btn-edit-orcamento" class="btn btn-sm btn-secondary" aria-label="Editar Orçamento"><i class="fas fa-edit" aria-hidden="true"></i> Editar</button>
+                             <button id="btn-aprovar" class="btn btn-sm" style="background-color: var(--accent-orange)" aria-label="Aprovar Orçamento"><i class="fas fa-thumbs-up" aria-hidden="true"></i> Aprovar</button>
+                             <button id="btn-finalizar" class="btn btn-sm" style="background-color: var(--accent-green)" aria-label="Finalizar Serviço"><i class="fas fa-check-double" aria-hidden="true"></i> Finalizar</button>
+                             <button id="btn-cancelar" class="btn btn-sm" style="background-color: var(--accent-red-status);" aria-label="Cancelar Orçamento"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar</button>
+                             <button id="btn-excluir-orcamento" class="btn btn-sm btn-danger" aria-label="Excluir Orçamento"><i class="fas fa-trash-alt" aria-hidden="true"></i> Excluir</button>
                         </div>
                     </div>
                 </div>
@@ -1200,25 +1365,25 @@
         </main>
     </div>
     
-    <div id="notification"></div>
+    <div id="notification" role="status" aria-live="polite"></div>
     
-    <div id="confirm-modal" class="modal-overlay">
+    <div id="confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content">
             <h3 id="modal-title">Confirmar Ação</h3>
             <p id="modal-message">Você tem certeza?</p>
             <div class="modal-actions">
-                <button id="modal-cancel-btn" class="btn btn-secondary"><i class="fas fa-ban"></i> Cancelar</button>
-                <button id="modal-confirm-btn" class="btn btn-danger"><i class="fas fa-check-circle"></i> Confirmar</button>
+                <button id="modal-cancel-btn" class="btn btn-secondary" aria-label="Cancelar"><i class="fas fa-ban" aria-hidden="true"></i> Cancelar</button>
+                <button id="modal-confirm-btn" class="btn btn-danger" aria-label="Confirmar"><i class="fas fa-check-circle" aria-hidden="true"></i> Confirmar</button>
             </div>
         </div>
     </div>
     
-    <div id="sync-overlay">
-        <div class="sync-spinner"><i class="fas fa-sync-alt"></i></div>
+    <div id="sync-overlay" role="alert" aria-live="assertive">
+        <div class="sync-spinner"><i class="fas fa-sync-alt" aria-hidden="true"></i></div>
         <p>Sincronizando dados...</p>
     </div>
 
-    <button id="back-to-top-btn" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
+    <button id="back-to-top-btn" title="Voltar ao topo" aria-label="Voltar ao topo"><i class="fas fa-arrow-up" aria-hidden="true"></i></button>
 
     <script type="module">
         // ===================================================================================
@@ -1239,13 +1404,13 @@
         // You can find this in your Supabase project settings -> API -> Project API keys -> anon public
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY'; 
 
-        if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY === 'YOUR_SUPABASE_API_KEY_HERE' || SUPABASE_KEY.length < 50) {
+        if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY === 'YOUR_SUPABASE_KEY' || SUPABASE_KEY.length < 50) {
             // Display a critical error message if Supabase credentials are not configured or are placeholders.
             document.body.innerHTML = `
                 <div style="padding: 40px; text-align: center; font-size: 1.2rem; color: #ffcc00; background-color: #333; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <h1><i class="fas fa-exclamation-triangle" style="color: orange;"></i> Erro de Configuração Crítico</h1>
+                    <h1><i class="fas fa-exclamation-triangle" aria-hidden="true" style="color: orange;"></i> Erro de Configuração Crítico</h1>
                     <p>As credenciais do Supabase não foram encontradas ou estão incorretas.</p>
-                    <p style="font-size: 0.9rem; color: #bbb;">Por favor, edite o código-fonte e substitua 'YOUR_SUPABASE_API_KEY_HERE' pela sua chave pública Supabase real.</p>
+                    <p style="font-size: 0.9rem; color: #bbb;">Por favor, edite o código-fonte e substitua 'YOUR_SUPABASE_KEY' pela sua chave pública Supabase real.</p>
                     <p style="font-size: 0.9rem; color: #bbb;">Você pode encontrar a chave em <i>Configurações do Projeto > Chave de API > Anon Public</i> no seu painel Supabase.</p>
                 </div>`;
             throw new Error("Supabase credentials not configured or placeholder used. Please check SUPABASE_URL and SUPABASE_KEY constants.");
@@ -1281,7 +1446,7 @@
             const syncBtn = $('#sync-btn');
             const notification = $('#notification');
             const syncOverlay = $('#sync-overlay');
-            const backToTopBtn = $('#back-to-top-btn');
+            const backToTopBtn = $('#back-to-top-btn'); 
             const offlineIndicator = $('#offline-indicator');
 
             // Cliente tab elements
@@ -1292,6 +1457,7 @@
             const clienteNomeInput = $('#cliente-nome');
             const clienteCarroInput = $('#cliente-carro');
             const clientePlacaInput = $('#cliente-placa'); 
+            const sortClientesSelect = $('#sort-clientes');
 
             // Serviço tab elements
             const servicoForm = $('#servico-form');
@@ -1299,6 +1465,7 @@
             const searchServicoInput = $('#search-servico');
             const servicoDescricaoInput = $('#servico-descricao');
             const servicoValorInput = $('#servico-valor');
+            const sortServicosSelect = $('#sort-servicos');
 
             // Novo Orçamento tab elements
             const orcamentoForm = $('#orcamento-form');
@@ -1326,11 +1493,14 @@
             const clearFiltersBtn = $('#clear-filters-btn');
             const detalhesContainer = $('#detalhes-orcamento-container');
             const recentActivityList = $('#recent-activity-list');
+            const clientDetailsPanel = $('#client-details-panel');
+            const closeClientDetailsBtn = $('.client-details-panel .close-details-btn');
 
-            // Modal elements
-            const confirmModal = $('#confirm-modal');
-            const modalConfirmBtn = $('#modal-confirm-btn');
-            const modalCancelBtn = $('#modal-cancel-btn');
+
+            // Modal elements (selected here for robustness)
+            const confirmModal = $('#confirm-modal'); 
+            const modalConfirmBtn = $('#modal-confirm-btn'); 
+            const modalCancelBtn = $('#modal-cancel-btn'); 
             let onConfirmCallback = null; 
 
             // Debounce function
@@ -1415,13 +1585,32 @@
             /**
              * Switches the active tab view.
              * @param {string} tabId - The ID of the tab to activate (e.g., 'dashboard', 'clientes').
+             * @param {Object} filterParams - Optional parameters to apply filters on the target tab.
              */
-            const showTab = (tabId) => { 
+            const showTab = (tabId, filterParams = {}) => { 
                 $$('.tab-content').forEach(t => t.classList.remove('active')); 
                 $$('.nav-btn').forEach(b => b.classList.remove('active')); 
                 $(`#${tabId}-tab`).classList.add('active'); 
                 $(`.nav-btn[data-tab="${tabId}"]`).classList.add('active'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                // Apply filters if navigating to historico tab
+                if (tabId === 'historico') {
+                    filterStatusSelect.value = filterParams.status || '';
+                    filterStartDateInput.value = filterParams.startDate || '';
+                    filterEndDateInput.value = filterParams.endDate || '';
+                    renderOrcamentos(); // Re-render with new filters
+                } else {
+                    // Clear history filters when navigating away from history tab
+                    filterStatusSelect.value = '';
+                    filterStartDateInput.value = '';
+                    filterEndDateInput.value = '';
+                    // No need to call renderOrcamentos if not on history tab
+                }
+                // Close client details panel if not on clients tab
+                if (tabId !== 'clientes') {
+                    clientDetailsPanel.style.display = 'none';
+                }
             };
 
             /**
@@ -1467,6 +1656,18 @@
              * @param {function} callback - The function to call if confirmed.
              */
             const showConfirmModal = (title, message, callback) => { 
+                // Remove existing listeners to prevent multiple calls
+                modalCancelBtn.removeEventListener('click', hideConfirmModal);
+                // Define a wrapper function for modalConfirmBtn to handle callback and hide
+                const confirmAndHide = () => {
+                    if (typeof onConfirmCallback === 'function') onConfirmCallback();
+                    hideConfirmModal();
+                };
+                modalConfirmBtn.removeEventListener('click', confirmAndHide); // Remove previous instance if any
+
+                modalCancelBtn.addEventListener('click', hideConfirmModal);
+                modalConfirmBtn.addEventListener('click', confirmAndHide); // Add new instance
+
                 $('#modal-title').textContent = title; 
                 $('#modal-message').textContent = message; 
                 onConfirmCallback = callback; 
@@ -1477,6 +1678,7 @@
             const hideConfirmModal = () => { 
                 confirmModal.classList.remove('active'); 
                 onConfirmCallback = null; 
+                // Listeners are removed in showConfirmModal when re-attached
             };
 
             /**
@@ -1499,6 +1701,10 @@
              * @param {string} type - 'list' or 'stat-card' or 'chart'.
              */
             const showSkeletons = (targetElement, count, type = 'list') => {
+                if (!targetElement) { // Add null check here
+                    console.warn('Target element for skeletons is null. Skipping rendering for this section.');
+                    return;
+                }
                 let html = '';
                 if (type === 'chart') {
                     html = `<div class="skeleton-loading-chart skeleton-loading"></div>`;
@@ -1728,6 +1934,7 @@
                         // If selected orcamento was deleted, clear details
                         state.orcamentoSelecionado = null;
                         detalhesContainer.style.display = 'none';
+                        showNotification('Orçamento previamente selecionado não encontrado após sincronização.', 'warning');
                     }
                 }
                 // If form is in edit mode, ensure it stays populated with fresh data
@@ -1752,20 +1959,20 @@
                 showSkeletons($('#servicos-lista'), 3, 'list');
                 showSkeletons($('#historico-lista'), 3, 'list');
 
-                orcamentoClienteSelect.innerHTML = '<option value="">Carregando clientes...</option>';
-                orcamentoServicoSelect.innerHTML = '<option value="">Carregando serviços...</option>';
-                orcamentoClienteSelect.disabled = true;
-                orcamentoServicoSelect.disabled = true;
-                orcamentoServicoQuantidadeInput.disabled = true;
-                addServicoBtn.disabled = true;
+                if (orcamentoClienteSelect) orcamentoClienteSelect.innerHTML = '<option value="">Carregando clientes...</option>';
+                if (orcamentoServicoSelect) orcamentoServicoSelect.innerHTML = '<option value="">Carregando serviços...</option>';
+                if (orcamentoClienteSelect) orcamentoClienteSelect.disabled = true;
+                if (orcamentoServicoSelect) orcamentoServicoSelect.disabled = true;
+                if (orcamentoServicoQuantidadeInput) orcamentoServicoQuantidadeInput.disabled = true;
+                if (addServicoBtn) addServicoBtn.disabled = true;
             };
 
             /** Displays empty states if data fetching fails. */
             const renderEmptyStatesOnFailure = () => {
-                clientesLista.innerHTML = renderEmptyState('Não foi possível carregar os clientes.', 'Verifique sua conexão e tente sincronizar.');
-                servicosLista.innerHTML = renderEmptyState('Não foi possível carregar os serviços.', 'Verifique sua conexão e tente sincronizar.');
-                historicoLista.innerHTML = renderEmptyState('Não foi possível carregar o histórico.', 'Verifique sua conexão e tente sincronizar.');
-                recentActivityList.innerHTML = renderEmptyState('Não foi possível carregar a atividade recente.', 'Verifique sua conexão e tente sincronizar.');
+                if (clientesLista) clientesLista.innerHTML = renderEmptyState('Não foi possível carregar os clientes.', 'Verifique sua conexão e tente sincronizar.');
+                if (servicosLista) servicosLista.innerHTML = renderEmptyState('Não foi possível carregar os serviços.', 'Verifique sua conexão e tente sincronizar.');
+                if (historicoLista) historicoLista.innerHTML = renderEmptyState('Não foi possível carregar o histórico.', 'Verifique sua conexão e tente sincronizar.');
+                if (recentActivityList) recentActivityList.innerHTML = renderEmptyState('Não foi possível carregar a atividade recente.', 'Verifique sua conexão e tente sincronizar.');
             };
 
             // ===================================================================================
@@ -1781,13 +1988,12 @@
                     .filter(o => o.status === 'Finalizado')
                     .reduce((sum, o) => sum + parseFloat(o.valor_total || 0), 0);
 
-                $('#dashboard-stats-container').innerHTML = `
-                    <div class="stat-card"><div class="icon"><i class="fas fa-users"></i></div><h3>Clientes</h3><p id="stat-clientes">${state.clientes.length}</p></div>
-                    <div class="stat-card"><div class="icon"><i class="fas fa-hourglass-half"></i></div><h3>Pendentes</h3><p id="stat-pendentes">${state.orcamentos.filter(o => o.status === 'Orçamento').length}</p></div>
-                    <div class="stat-card"><div class="icon"><i class="fas fa-check-circle"></i></div><h3>Aprovados</h3><p id="stat-aprovados">${state.orcamentos.filter(o => o.status === 'Aprovado').length}</p></div>
-                    <div class="stat-card"><div class="icon"><i class="fas fa-calendar-check"></i></div><h3>Mês Atual</h3><p id="stat-finalizados-mes">${state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at || o.created_at) >= startOfMonth).length}</p></div>
-                    <div class="stat-card" style="grid-column: span 2;"><div class="icon"><i class="fas fa-dollar-sign"></i></div><h3>Faturamento Total</h3><p id="stat-faturamento-total">${formatCurrency(totalRevenue)}</p></div>
-                `;
+                // Update text content of stat cards directly
+                $('#stat-clientes').textContent = state.clientes.length;
+                $('#stat-pendentes').textContent = state.orcamentos.filter(o => o.status === 'Orçamento').length;
+                $('#stat-aprovados').textContent = state.orcamentos.filter(o => o.status === 'Aprovado').length;
+                $('#stat-finalizados-mes').textContent = state.orcamentos.filter(o => o.status === 'Finalizado' && new Date(o.updated_at || o.created_at) >= startOfMonth).length;
+                $('#stat-faturamento-total').textContent = formatCurrency(totalRevenue);
 
                 renderMonthlyStatsChart();
             };
@@ -1809,26 +2015,80 @@
                     months.unshift(date.toLocaleString('pt-BR', { month: 'short' })); 
                 }
 
-                let maxCount = 0;
-                months.forEach(month => {
-                    const fullMonthKey = new Date(now.getFullYear(), now.getMonth() - (months.length - 1 - months.indexOf(month)), 1).toLocaleString('pt-BR', { year: 'numeric', month: 'short' });
-                    maxCount = Math.max(maxCount, monthlyData[fullMonthKey] || 0);
-                });
-                maxCount = Math.max(maxCount, 5); 
+                let myChart = Chart.getChart('monthlyFinalizedChartCanvas'); // Get existing chart instance
+                if (myChart) {
+                    myChart.destroy(); // Destroy it to re-create with new data
+                }
 
-                const chartHtml = months.map(monthName => {
+                const ctx = document.createElement('canvas');
+                ctx.id = 'monthlyFinalizedChartCanvas';
+                $('#monthly-finalized-chart').innerHTML = ''; // Clear previous HTML bars
+                $('#monthly-finalized-chart').appendChild(ctx);
+
+                // Prepare data for Chart.js
+                const chartLabels = months.map(m => m.charAt(0).toUpperCase() + m.slice(1).replace('.', ''));
+                const chartData = months.map(monthName => {
                     const fullMonthKey = new Date(now.getFullYear(), now.getMonth() - (months.length - 1 - months.indexOf(monthName)), 1).toLocaleString('pt-BR', { year: 'numeric', month: 'short' });
-                    const count = monthlyData[fullMonthKey] || 0;
-                    const barHeight = (count / maxCount) * 100; 
-                    return `
-                        <div class="chart-bar-container">
-                            <div class="chart-bar-value">${count}</div>
-                            <div class="chart-bar" style="height: ${barHeight}%;"></div>
-                            <div class="chart-bar-label">${monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '')}</div>
-                        </div>
-                    `;
-                }).join('');
-                $('#monthly-finalized-chart').innerHTML = chartHtml;
+                    return monthlyData[fullMonthKey] || 0;
+                });
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Serviços Finalizados',
+                            data: chartData,
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)', // accent-green with opacity
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1,
+                            borderRadius: 5,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += context.raw;
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'var(--text-muted)',
+                                    callback: function(value) { if (Number.isInteger(value)) { return value; } } // Only show integers
+                                },
+                                grid: {
+                                    color: 'var(--border-color)',
+                                    drawBorder: false,
+                                },
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'var(--text-muted)',
+                                },
+                                grid: {
+                                    color: 'var(--border-color)',
+                                    drawBorder: false,
+                                },
+                            }
+                        }
+                    }
+                });
             };
 
             /** Renders a list of recent activities (latest 8 created or updated budgets). */
@@ -1849,7 +2109,7 @@
                     <li data-id="${orc.id}" class="data-list-item">
                         <div>
                             <strong>${orc.clientes?.nome || 'Cliente Removido'}</strong><br>
-                            <small><i class="fas fa-car"></i> ${orc.clientes?.carro || 'Veículo não informado'}</small>
+                            <small><i class="fas fa-car" aria-hidden="true"></i> ${orc.clientes?.carro || 'Veículo não informado'}</small>
                         </div>
                         <div>
                             <span class="status-indicator status-${orc.status}">${orc.status}</span>
@@ -1866,11 +2126,24 @@
             /** Renders the list of clients based on search input. */
             const renderClientes = () => {
                 const searchTerm = searchClienteInput.value.toLowerCase().trim();
-                const filtered = state.clientes.filter(c => 
+                let filtered = state.clientes.filter(c => 
                     c.nome.toLowerCase().includes(searchTerm) || 
                     (c.placa && c.placa.toLowerCase().includes(searchTerm)) ||
                     (c.telefone && formatPhone(c.telefone).includes(searchTerm))
                 );
+
+                // Apply sorting
+                const sortOption = sortClientesSelect.value;
+                if (sortOption === 'nome_asc') {
+                    filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+                } else if (sortOption === 'nome_desc') {
+                    filtered.sort((a, b) => b.nome.localeCompare(a.nome));
+                } else if (sortOption === 'carro_asc') {
+                    filtered.sort((a, b) => (a.carro || '').localeCompare(b.carro || ''));
+                } else if (sortOption === 'placa_asc') {
+                    filtered.sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
+                }
+
 
                 if (filtered.length === 0) {
                     clientesLista.innerHTML = renderEmptyState('Nenhum cliente encontrado.', 'Adicione um novo cliente no formulário ao lado.');
@@ -1878,15 +2151,23 @@
                 }
 
                 clientesLista.innerHTML = filtered.map(c => `
-                    <li data-id="${c.id}" class="data-list-item">
+                    <li data-id="${c.id}" class="data-list-item" role="listitem" tabindex="0">
                         <div>
-                            <strong>${c.nome}</strong><br>
-                            <small><i class="fas fa-car"></i> ${c.carro || 'N/D'} | <i class="fas fa-id-card"></i> Placa: ${c.placa || 'N/D'}</small><br>
-                            <small><i class="fas fa-phone-alt"></i> ${formatPhone(c.telefone) || 'N/D'}</small>
+                            <strong data-field="nome">${c.nome}</strong><br>
+                            <input type="text" class="inline-edit-input edit-mode-input" data-id="${c.id}" data-field="nome" value="${c.nome || ''}" style="width: calc(100% - 20px);">
+                            <small><i class="fas fa-car" aria-hidden="true"></i> <span data-field="carro">${c.carro || 'N/D'}</span>
+                            <input type="text" class="inline-edit-input edit-mode-input" data-id="${c.id}" data-field="carro" value="${c.carro || ''}" style="width: calc(100% - 20px);">
+                             | <i class="fas fa-id-card" aria-hidden="true"></i> Placa: <span data-field="placa">${c.placa || 'N/D'}</span>
+                             <input type="text" class="inline-edit-input edit-mode-input" data-id="${c.id}" data-field="placa" value="${c.placa || ''}" placeholder="ABC-1234 ou ABC1D23" style="width: calc(100% - 20px);">
+                             </small><br>
+                            <small><i class="fas fa-phone-alt" aria-hidden="true"></i> <span data-field="telefone">${formatPhone(c.telefone) || 'N/D'}</span></small>
+                            <input type="tel" class="inline-edit-input edit-mode-input" data-id="${c.id}" data-field="telefone" value="${c.telefone || ''}" placeholder="(XX) XXXXX-XXXX" style="width: calc(100% - 20px);">
                         </div>
                         <div class="item-actions">
-                            <button class="btn btn-sm btn-secondary edit-cliente-btn" data-id="${c.id}" title="Editar Cliente"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-danger delete-cliente-btn" data-id="${c.id}" title="Excluir Cliente"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn btn-sm btn-secondary edit-cliente-btn" data-id="${c.id}" title="Editar Cliente" aria-label="Editar Cliente"><i class="fas fa-edit" aria-hidden="true"></i> Editar</button>
+                            <button class="btn btn-sm btn-danger delete-cliente-btn" data-id="${c.id}" title="Excluir Cliente" aria-label="Excluir Cliente"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                            <button class="btn btn-sm btn-success save-inline-edit-cliente-btn edit-mode-input" data-id="${c.id}" style="display: none;" aria-label="Guardar edição"><i class="fas fa-save" aria-hidden="true"></i> Guardar</button>
+                            <button class="btn btn-sm btn-secondary cancel-inline-edit-cliente-btn edit-mode-input" data-id="${c.id}" style="display: none;" aria-label="Cancelar edição"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar</button>
                         </div>
                     </li>
                 `).join('');
@@ -1909,7 +2190,7 @@
                     nome: clienteNomeInput.value.trim(), 
                     telefone: clienteTelefoneInput.value.trim(), 
                     carro: clienteCarroInput.value.trim(), 
-                    placa: clientePlacaInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') // Remove non-alphanumeric chars
+                    placa: clientePlacaInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') 
                 }; 
                 let error;
 
@@ -1931,15 +2212,16 @@
                 }
             };
 
-            /** Populates the client form for editing. */
+            /** Populates the client form for editing or enables inline editing. */
             const handleEditCliente = (id) => { 
                 const c = state.clientes.find(cl => cl.id == id); 
                 if(!c) {
                     showNotification('Cliente não encontrado para edição.', 'error');
                     return;
                 }
+                // Directly populate the form on the left for editing
                 state.editandoClienteId = id; 
-                $('#cliente-form-title').innerHTML = 'Editar Cliente <i class="fas fa-user-edit"></i>'; 
+                $('#cliente-form-title').innerHTML = 'Editar Cliente <i class="fas fa-user-edit" aria-hidden="true"></i>'; 
                 clienteNomeInput.value = c.nome; 
                 clienteTelefoneInput.value = c.telefone; 
                 clienteCarroInput.value = c.carro; 
@@ -1951,6 +2233,76 @@
                 handleValidationIcon(clienteTelefoneInput);
                 handleValidationIcon(clientePlacaInput);
             };
+
+            /** Handles saving inline edits for a client. */
+            const handleSaveInlineEditCliente = async (id, listItem) => {
+                const data = {};
+                let isValid = true;
+                const fieldsToValidate = ['nome', 'telefone', 'carro', 'placa']; 
+
+                fieldsToValidate.forEach(fieldName => {
+                    const inputElement = listItem.querySelector(`.inline-edit-input[data-field="${fieldName}"]`);
+                    if (inputElement) {
+                        data[fieldName] = inputElement.value.trim();
+                        if (fieldName === 'nome' && !data[fieldName]) {
+                            inputElement.setCustomValidity('O nome é obrigatório.'); isValid = false;
+                        } else if (fieldName === 'telefone' && data[fieldName] && !/^\(\d{2}\) \d{5}-\d{4}$/.test(data[fieldName])) { 
+                             inputElement.setCustomValidity('Formato inválido. Ex: (XX) XXXXX-XXXX'); isValid = false;
+                        } else if (fieldName === 'placa' && data[fieldName] && !/^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/i.test(data[fieldName].replace(/-/g, ''))) {
+                             inputElement.setCustomValidity('Formato inválido. Ex: ABC-1234 ou ABC1D23'); isValid = false;
+                        } else {
+                            inputElement.setCustomValidity(''); 
+                        }
+                        // Report validity to show native browser tooltip
+                        if (!inputElement.checkValidity()) { isValid = false; inputElement.reportValidity(); }
+                    }
+                });
+
+                if (!isValid) {
+                    showNotification('Por favor, corrija os erros nos campos antes de guardar.', 'error');
+                    return;
+                }
+
+                // Clean placa value before sending to DB if it has hyphens
+                data.placa = data.placa ? data.placa.replace(/[^A-Z0-9]/g, '') : data.placa;
+                data.telefone = data.telefone ? data.telefone.replace(/[^0-9]/g, '') : data.telefone;
+
+
+                try {
+                    const { error } = await db.from('clientes').update(data).eq('id', id);
+                    if (error) throw new Error(error.message);
+                    showNotification('Cliente atualizado com sucesso!', 'success');
+                    triggerConfetti('success');
+                    // Exit editing mode - data will re-render via listener, updating the display spans
+                    listItem.classList.remove('editing');
+                    // Manually hide inputs and show spans for immediate feedback before full re-render
+                    listItem.querySelectorAll('.inline-edit-input').forEach(input => input.style.display = 'none');
+                    listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
+                    listItem.querySelector('.edit-cliente-btn').style.display = 'inline-flex';
+                    listItem.querySelector('.delete-cliente-btn').style.display = 'inline-flex';
+                    listItem.querySelector('.save-inline-edit-cliente-btn').style.display = 'none';
+                    listItem.querySelector('.cancel-inline-edit-cliente-btn').style.display = 'none';
+
+                } catch (error) {
+                    console.error('Erro ao guardar edição in-line do cliente:', error);
+                    showNotification(`Erro ao guardar: ${error.message}`, 'error');
+                }
+            };
+
+            /** Handles canceling inline edits for a client. */
+            const handleCancelInlineEditCliente = (id, listItem) => {
+                listItem.classList.remove('editing');
+                listItem.querySelectorAll('.inline-edit-input').forEach(input => {
+                    input.style.display = 'none';
+                    input.setCustomValidity(''); // Clear any validation errors
+                });
+                listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
+                listItem.querySelector('.edit-cliente-btn').style.display = 'inline-flex';
+                listItem.querySelector('.delete-cliente-btn').style.display = 'inline-flex';
+                listItem.querySelector('.save-inline-edit-cliente-btn').style.display = 'none';
+                listItem.querySelector('.cancel-inline-edit-cliente-btn').style.display = 'none';
+            };
+
 
             /** Initiates deletion of a client. */
             const handleDeleteCliente = (id) => showConfirmModal(
@@ -1975,13 +2327,58 @@
             const resetClienteForm = () => { 
                 state.editandoClienteId = null; 
                 clienteForm.reset(); 
-                $('#cliente-form-title').innerHTML = 'Novo Cliente <i class="fas fa-user-plus"></i>'; 
+                $('#cliente-form-title').innerHTML = 'Novo Cliente <i class="fas fa-user-plus" aria-hidden="true"></i>'; 
                 $('#cancelar-edicao-cliente').style.display = 'none'; 
                 // Clear all custom validities and hide validation icons
                 clienteNomeInput.setCustomValidity(''); 
                 clienteTelefoneInput.setCustomValidity('');
                 clientePlacaInput.setCustomValidity('');
                 $$('#cliente-form .validation-icon').forEach(icon => icon.style.display = 'none');
+            };
+
+            /** Displays detailed information for a selected client, including past orders. */
+            const displayClientDetails = (clientId) => {
+                const client = state.clientes.find(c => c.id === clientId);
+                if (!client) {
+                    showNotification('Cliente não encontrado para detalhes.', 'error');
+                    return;
+                }
+
+                $('#client-detail-name').textContent = client.nome;
+                $('#client-detail-phone').textContent = formatPhone(client.telefone);
+                $('#client-detail-car').textContent = client.carro || 'N/D';
+                $('#client-detail-plate').textContent = client.placa || 'N/D';
+
+                const clientPastOrcamentos = state.orcamentos.filter(orc => orc.clientes?.id === clientId);
+                const pastOrcamentosList = $('#client-past-orcamentos');
+
+                if (clientPastOrcamentos.length === 0) {
+                    pastOrcamentosList.innerHTML = renderEmptyState('Nenhum orçamento anterior para este cliente.', '');
+                } else {
+                    pastOrcamentosList.innerHTML = clientPastOrcamentos.map(orc => `
+                        <li data-id="${orc.id}" class="data-list-item">
+                            <div>
+                                <strong>${formatDateTime(orc.created_at)}</strong><br>
+                                <small>${orc.orcamento_itens.map(item => `${item.descricao_servico} (x${item.quantidade})`).join(', ')}</small>
+                            </div>
+                            <div>
+                                <span class="status-indicator status-${orc.status}">${orc.status}</span>
+                                <strong>${formatCurrency(orc.valor_total)}</strong>
+                            </div>
+                        </li>
+                    `).join('');
+                    // Add event listener to each past budget item to open its details
+                    pastOrcamentosList.querySelectorAll('li').forEach(li => {
+                        li.addEventListener('click', (e) => {
+                            const orcId = e.currentTarget.dataset.id;
+                            showTab('historico'); // Switch to history tab
+                            setTimeout(() => handleHistoricoClick(orcId), 100); // Open details after tab switch
+                        });
+                    });
+                }
+                
+                clientDetailsPanel.style.display = 'block';
+                clientDetailsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
             
             // ===================================================================================
@@ -1991,7 +2388,19 @@
             /** Renders the list of services based on search input. */
             const renderServicos = () => {
                 const searchTerm = searchServicoInput.value.toLowerCase().trim();
-                const filtered = state.servicos.filter(s => s.descricao.toLowerCase().includes(searchTerm));
+                let filtered = state.servicos.filter(s => s.descricao.toLowerCase().includes(searchTerm));
+
+                // Apply sorting
+                const sortOption = sortServicosSelect.value;
+                if (sortOption === 'descricao_asc') {
+                    filtered.sort((a, b) => a.descricao.localeCompare(b.descricao));
+                } else if (sortOption === 'descricao_desc') {
+                    filtered.sort((a, b) => b.descricao.localeCompare(a.descricao));
+                } else if (sortOption === 'valor_asc') {
+                    filtered.sort((a, b) => a.valor - b.valor);
+                } else if (sortOption === 'valor_desc') {
+                    filtered.sort((a, b) => b.valor - a.valor);
+                }
 
                  if (filtered.length === 0) {
                     servicosLista.innerHTML = renderEmptyState('Nenhum serviço encontrado.', 'Adicione um novo serviço no formulário ao lado.');
@@ -1999,14 +2408,19 @@
                 }
 
                 servicosLista.innerHTML = filtered.map(s => `
-                    <li data-id="${s.id}" class="data-list-item">
+                    <li data-id="${s.id}" class="data-list-item" role="listitem" tabindex="0">
                         <div>
-                            <strong>${s.descricao}</strong><br>
-                            <small>${formatCurrency(s.valor)}</small>
+                            <strong data-field="descricao">${s.descricao}</strong>
+                            <input type="text" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="descricao" value="${s.descricao || ''}" style="width: calc(100% - 20px);" aria-label="Editar descrição">
+                            <br>
+                            <small>R$ <span data-field="valor">${s.valor.toFixed(2).replace('.', ',')}</span></small>
+                            <input type="number" class="inline-edit-input edit-mode-input" data-id="${s.id}" data-field="valor" value="${s.valor}" step="0.01" style="width: calc(100% - 20px);" aria-label="Editar valor">
                         </div>
                         <div class="item-actions">
-                            <button class="btn btn-sm btn-secondary edit-servico-btn" data-id="${s.id}" title="Editar Serviço"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-danger delete-servico-btn" data-id="${s.id}" title="Excluir Serviço"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn btn-sm btn-secondary edit-servico-btn" data-id="${s.id}" title="Editar Serviço" aria-label="Editar Serviço"><i class="fas fa-edit" aria-hidden="true"></i> Editar</button>
+                            <button class="btn btn-sm btn-danger delete-servico-btn" data-id="${s.id}" title="Excluir Serviço" aria-label="Excluir Serviço"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                            <button class="btn btn-sm btn-success save-inline-edit-servico-btn edit-mode-input" data-id="${s.id}" style="display: none;" aria-label="Guardar edição"><i class="fas fa-save" aria-hidden="true"></i> Guardar</button>
+                            <button class="btn btn-sm btn-secondary cancel-inline-edit-servico-btn edit-mode-input" data-id="${s.id}" style="display: none;" aria-label="Cancelar edição"><i class="fas fa-times-circle" aria-hidden="true"></i> Cancelar</button>
                         </div>
                     </li>
                 `).join('');
@@ -2048,23 +2462,115 @@
                 }
             };
 
-            /** Populates the service form for editing. */
+            /** Populates the service form for editing or enables inline editing. */
             const handleEditServico = (id) => { 
                 const s = state.servicos.find(sv => sv.id == id); 
                 if (!s) {
                     showNotification('Serviço não encontrado para edição.', 'error');
                     return;
                 }
-                state.editandoServicoId = id; 
-                $('#servico-form-title').innerHTML = 'Editar Serviço <i class="fas fa-edit"></i>'; 
-                servicoDescricaoInput.value = s.descricao; 
-                servicoValorInput.value = s.valor; 
-                $('#cancelar-edicao-servico').style.display = 'inline-flex'; 
-                $('#servico-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                // Manually trigger validation icons
-                handleValidationIcon(servicoDescricaoInput);
-                handleValidationIcon(servicoValorInput);
+                 // Toggle editing mode for this specific list item
+                const listItem = $(`#servicos-lista li[data-id="${id}"]`);
+                if (listItem) {
+                    listItem.classList.add('editing');
+                    // Get all fields that can be edited in-line
+                    const editableFields = listItem.querySelectorAll('[data-field]');
+                    editableFields.forEach(fieldSpan => {
+                        const fieldName = fieldSpan.dataset.field;
+                        const inputElement = listItem.querySelector(`.inline-edit-input[data-field="${fieldName}"]`);
+                        if (inputElement) {
+                            inputElement.value = s[fieldName]; // value is already number, no need for formatCurrency
+                            fieldSpan.style.display = 'none';
+                            inputElement.style.display = 'inline-block';
+                        }
+                    });
+                    // Toggle buttons
+                    listItem.querySelector('.edit-servico-btn').style.display = 'none';
+                    listItem.querySelector('.delete-servico-btn').style.display = 'none';
+                    listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'inline-flex';
+                    listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'inline-flex';
+
+                    // Scroll to the item
+                    listItem.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                } else {
+                    // Fallback to form editing if not inline-editable or element not found
+                    state.editandoServicoId = id; 
+                    $('#servico-form-title').innerHTML = 'Editar Serviço <i class="fas fa-edit" aria-hidden="true"></i>'; 
+                    servicoDescricaoInput.value = s.descricao; 
+                    servicoValorInput.value = s.valor; 
+                    $('#cancelar-edicao-servico').style.display = 'inline-flex'; 
+                    $('#servico-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                    // Manually trigger validation icons
+                    handleValidationIcon(servicoDescricaoInput);
+                    handleValidationIcon(servicoValorInput);
+                }
             };
+
+            /** Handles saving inline edits for a service. */
+            const handleSaveInlineEditServico = async (id, listItem) => {
+                const data = {};
+                let isValid = true;
+                const fieldsToValidate = ['descricao', 'valor'];
+
+                fieldsToValidate.forEach(fieldName => {
+                    const inputElement = listItem.querySelector(`.inline-edit-input[data-field="${fieldName}"]`);
+                    if (inputElement) {
+                        data[fieldName] = inputElement.value.trim();
+                        if (fieldName === 'descricao' && !data[fieldName]) {
+                            inputElement.setCustomValidity('A descrição é obrigatória.'); isValid = false;
+                        } else if (fieldName === 'valor') {
+                            const val = parseFloat(data[fieldName]);
+                            if (isNaN(val) || val <= 0) {
+                                inputElement.setCustomValidity('O valor deve ser um número positivo.'); isValid = false;
+                            } else {
+                                data[fieldName] = val; // Convert to number for saving
+                                inputElement.setCustomValidity('');
+                            }
+                        } else {
+                            inputElement.setCustomValidity('');
+                        }
+                        if (!inputElement.checkValidity()) { isValid = false; inputElement.reportValidity(); }
+                    }
+                });
+
+                if (!isValid) {
+                    showNotification('Por favor, corrija os erros nos campos antes de guardar.', 'error');
+                    return;
+                }
+
+                try {
+                    const { error } = await db.from('servicos').update(data).eq('id', id);
+                    if (error) throw new Error(error.message);
+                    showNotification('Serviço atualizado com sucesso!', 'success');
+                    triggerConfetti('success');
+                    // Exit editing mode
+                    listItem.classList.remove('editing');
+                    listItem.querySelectorAll('.inline-edit-input').forEach(input => input.style.display = 'none');
+                    listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
+                    listItem.querySelector('.edit-servico-btn').style.display = 'inline-flex';
+                    listItem.querySelector('.delete-servico-btn').style.display = 'inline-flex';
+                    listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'none';
+                    listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'none';
+                } catch (error) {
+                    console.error('Erro ao guardar edição in-line do serviço:', error);
+                    showNotification(`Erro ao guardar: ${error.message}`, 'error');
+                }
+            };
+
+            /** Handles canceling inline edits for a service. */
+            const handleCancelInlineEditServico = (id, listItem) => {
+                listItem.classList.remove('editing');
+                listItem.querySelectorAll('.inline-edit-input').forEach(input => {
+                    input.style.display = 'none';
+                    input.setCustomValidity(''); // Clear any validation errors
+                });
+                listItem.querySelectorAll('[data-field]').forEach(span => span.style.display = 'inline');
+                listItem.querySelector('.edit-servico-btn').style.display = 'inline-flex';
+                listItem.querySelector('.delete-servico-btn').style.display = 'inline-flex';
+                listItem.querySelector('.save-inline-edit-servico-btn').style.display = 'none';
+                listItem.querySelector('.cancel-inline-edit-servico-btn').style.display = 'none';
+            };
+
 
             /** Initiates deletion of a service. */
             const handleDeleteServico = (id) => showConfirmModal(
@@ -2090,7 +2596,7 @@
             const resetServicoForm = () => { 
                 state.editandoServicoId = null; 
                 servicoForm.reset(); 
-                $('#servico-form-title').innerHTML = 'Novo Serviço <i class="fas fa-clipboard-list"></i>'; 
+                $('#servico-form-title').innerHTML = 'Novo Serviço <i class="fas fa-clipboard-list" aria-hidden="true"></i>'; 
                 $('#cancelar-edicao-servico').style.display = 'none'; 
                 servicoDescricaoInput.setCustomValidity(''); 
                 servicoValorInput.setCustomValidity(''); 
@@ -2333,8 +2839,8 @@
                 orcamentoClienteSelect.value = ''; 
                 orcamentoClienteSelect.setCustomValidity(''); 
                 paymentOptionsValidation.style.display = 'none';
-                orcamentoFormTitle.innerHTML = 'Criar Novo Orçamento <i class="fas fa-file-invoice-dollar"></i>';
-                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Orçamento';
+                orcamentoFormTitle.innerHTML = 'Criar Novo Orçamento <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>';
+                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Salvar Orçamento';
                 cancelarEdicaoOrcamentoBtn.style.display = 'none';
                 orcamentoServicoQuantidadeInput.value = '1'; 
             };
@@ -2372,10 +2878,10 @@
                 }
 
                 historicoLista.innerHTML = filtered.map(o => `
-                    <li data-id="${o.id}" class="data-list-item ${o.id === state.orcamentoSelecionado?.id ? 'selected' : ''}">
+                    <li data-id="${o.id}" class="data-list-item ${o.id === state.orcamentoSelecionado?.id ? 'selected' : ''}" role="listitem" tabindex="0">
                         <div>
                             <strong>${o.clientes?.nome || 'Cliente Removido'}</strong><br>
-                            <small><i class="fas fa-car"></i> ${o.clientes?.carro || 'N/D'} | <i class="fas fa-id-card"></i> Placa: ${o.clientes?.placa || 'N/D'}</small><br>
+                            <small><i class="fas fa-car" aria-hidden="true"></i> ${o.clientes?.carro || 'N/D'} | <i class="fas fa-id-card" aria-hidden="true"></i> Placa: ${o.clientes?.placa || 'N/D'}</small><br>
                             <small>${formatDateTime(o.created_at)}</small>
                         </div>
                         <div>
@@ -2396,26 +2902,28 @@
                 } 
 
                 try {
-                    // Try to find the budget in the current state
-                    let data = state.orcamentos.find(o => o.id == id); 
-
-                    // If not found, force a data refresh and try again
+                    // Always try to find the budget in the current state to avoid direct DB calls
+                    // and handle cases where it might have been deleted/updated
+                    const data = state.orcamentos.find(o => o.id === id);
                     if (!data) {
-                        showNotification('A carregar detalhes... (atualizando dados)', 'warning');
-                        await fetchAllData(false); // Fetch data silently
-                        data = state.orcamentos.find(o => o.id == id); // Try finding again after refresh
+                         // If not found in current state, attempt a fresh fetch for just this one
+                        const { data: freshData, error } = await db.from('orcamentos')
+                            .select(`*, clientes (*), orcamento_itens (id, servico_id, descricao_servico, valor_cobrado, quantidade)`)
+                            .eq('id', id)
+                            .single();
+                        if (error || !freshData) {
+                             throw new Error(error ? error.message : 'Orçamento não encontrado na base de dados.');
+                        }
+                        state.orcamentoSelecionado = freshData;
+                    } else {
+                         state.orcamentoSelecionado = data;
                     }
-                    
-                    if (!data) {
-                        // If still not found after refresh, then it truly doesn't exist or there's a deeper issue
-                        throw new Error('Orçamento não encontrado no estado local após atualização.');
-                    }
-
-                    state.orcamentoSelecionado = data; 
                     displayOrcamentoDetails(); 
                 } catch (error) {
                     console.error('Erro ao buscar detalhes do orçamento:', error);
-                    return showNotification(`Erro ao buscar detalhes: ${error.message}`, 'error'); 
+                    state.orcamentoSelecionado = null; // Clear selection if error occurs
+                    detalhesContainer.style.display = 'none'; // Hide details panel
+                    showNotification(`Erro ao buscar detalhes: ${error.message}`, 'error'); 
                 }
             };
 
@@ -2470,7 +2978,7 @@
                 state.editandoOrcamentoId = orc.id;
                 orcamentoIdToEditInput.value = orc.id; 
 
-                orcamentoFormTitle.innerHTML = 'Editar Orçamento <i class="fas fa-edit"></i>';
+                orcamentoFormTitle.innerHTML = 'Editar Orçamento <i class="fas fa-edit" aria-hidden="true"></i>';
                 orcamentoClienteSelect.value = orc.cliente_id;
                 orcamentoDescontoInput.value = orc.desconto || 0;
 
@@ -2493,7 +3001,7 @@
                 renderNovoOrcamentoItens();
                 updateOrcamentoTotal();
 
-                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Orçamento';
+                submitOrcamentoBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Atualizar Orçamento';
                 cancelarEdicaoOrcamentoBtn.style.display = 'inline-flex';
             };
 
@@ -2562,11 +3070,10 @@
             /** Generates the standard footer for quote/receipt texts. */
             const generateFooter = () => `
 ==================================
-*${ESTABELECIMENTO.nome}*
-📍 ${ESTABELECIMENTO.endereco}
-*📞 Contato:* ${formatPhone(ESTABELECIMENTO.telefone)}
-
-_${ESTABELECIMENTO.agradecimento}_`;
+*${ESTABELECIMENTO.nome}*\n` +
+`📍 ${ESTABELECIMENTO.endereco}\n` +
+`*📞 Contato:* ${formatPhone(ESTABELECIMENTO.telefone)}\n\n` +
+`_${ESTABELECIMENTO.agradecimento}_`;
 
             /**
              * Generates the detailed quote text.
@@ -2663,6 +3170,139 @@ _${ESTABELECIMENTO.agradecimento}_`;
             };
 
             // ===================================================================================
+            // PDF GENERATION FUNCTIONS
+            // ===================================================================================
+            
+            const generatePdf = (type) => {
+                if (!state.orcamentoSelecionado) {
+                    showNotification(`Nenhum orçamento selecionado para gerar ${type}.`, 'warning');
+                    return;
+                }
+                const orc = state.orcamentoSelecionado;
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                let y = 10;
+                const margin = 10;
+                const lineHeight = 7;
+
+                // Set font for better display
+                doc.setFont("helvetica");
+
+                // Header
+                doc.setFontSize(18);
+                doc.setTextColor(239, 68, 68); // primary-red
+                doc.text(ESTABELECIMENTO.nome, margin, y);
+                y += lineHeight;
+                doc.setFontSize(10);
+                doc.setTextColor(148, 163, 184); // text-muted
+                doc.text(ESTABELECIMENTO.endereco, margin, y);
+                y += lineHeight;
+                doc.text(`Contato: ${formatPhone(ESTABELECIMENTO.telefone)}`, margin, y);
+                y += 10; // Extra space
+
+                // Document Title
+                doc.setFontSize(14);
+                doc.setTextColor(255, 255, 255); // text-light
+                doc.text(type === 'orcamento' ? "ORÇAMENTO" : "RECIBO (NÃO FISCAL)", margin, y);
+                y += 5;
+                doc.setDrawColor(239, 68, 68); // primary-red
+                doc.line(margin, y, doc.internal.pageSize.width - margin, y); // Underline
+                y += 10;
+
+                // Client Details
+                doc.setFontSize(10);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`Data: ${formatDateTime(type === 'orcamento' ? orc.created_at : orc.updated_at)}`, margin, y);
+                y += lineHeight;
+                doc.text(`Cliente: ${orc.clientes?.nome || 'N/A'}`, margin, y);
+                y += lineHeight;
+                doc.text(`Veículo: ${orc.clientes?.carro || 'N/A'}`, margin, y);
+                y += lineHeight;
+                doc.text(`Placa: ${orc.clientes?.placa || 'N/A'}`, margin, y);
+                y += 10;
+
+                // Services Table
+                const tableHeaders = [['Descrição', 'Quantidade', 'Valor Unitário', 'Total']];
+                const tableData = orc.orcamento_itens.map(item => [
+                    item.descricao_servico,
+                    item.quantidade,
+                    formatCurrency(item.valor_cobrado),
+                    formatCurrency(parseFloat(item.valor_cobrado) * item.quantidade)
+                ]);
+
+                doc.autoTable({
+                    startY: y,
+                    head: tableHeaders,
+                    body: tableData,
+                    theme: 'grid', // 'striped', 'grid', 'plain'
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 3,
+                        textColor: 255, // White text
+                        fillColor: [30, 41, 59], // bg-card
+                        lineColor: [71, 85, 105], // border-color
+                        lineWidth: 0.5,
+                        valign: 'middle',
+                    },
+                    headStyles: {
+                        fillColor: [239, 68, 68], // primary-red
+                        textColor: 255,
+                        fontStyle: 'bold',
+                    },
+                    bodyStyles: {
+                        fillColor: [15, 23, 42], // bg-dark
+                        textColor: [226, 232, 240] // text-light
+                    },
+                    alternateRowStyles: {
+                        fillColor: [30, 41, 59], // bg-card
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 'auto' },
+                        1: { cellWidth: 25, halign: 'center' },
+                        2: { cellWidth: 35, halign: 'right' },
+                        3: { cellWidth: 35, halign: 'right' }
+                    },
+                    didDrawPage: function (data) {
+                        // Footer on every page
+                        let pageHeight = doc.internal.pageSize.height;
+                        doc.setFontSize(8);
+                        doc.setTextColor(148, 163, 184);
+                        doc.text(`Página ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - margin, pageHeight - 5, { align: 'right' });
+                    }
+                });
+                
+                y = doc.autoTable.previous.finalY + 10; // Get y position after table
+
+                // Totals
+                doc.setFontSize(12);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`Subtotal: ${formatCurrency(orc.orcamento_itens.reduce((acc, item) => acc + (parseFloat(item.valor_cobrado) * item.quantidade), 0))}`, doc.internal.pageSize.width - margin, y, { align: 'right' });
+                y += lineHeight;
+                doc.text(`Desconto: ${orc.desconto || 0}%`, doc.internal.pageSize.width - margin, y, { align: 'right' });
+                y += lineHeight;
+                doc.setFontSize(16);
+                doc.setTextColor(34, 197, 94); // accent-green
+                doc.text(`VALOR TOTAL: ${formatCurrency(orc.valor_total)}`, doc.internal.pageSize.width - margin, y, { align: 'right' });
+                y += lineHeight + 5;
+
+                doc.setFontSize(10);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`Formas de Pagamento: ${orc.formas_pagamento || 'Não especificado'}`, margin, y);
+                y += 15;
+
+                // Footer (duplicate of header for final page if it fits, or dedicated space)
+                doc.setFontSize(10);
+                doc.setTextColor(148, 163, 184); // text-muted
+                doc.text(`Local: ${ESTABELECIMENTO.endereco}`, margin, doc.internal.pageSize.height - 20);
+                doc.text(`Contato: ${formatPhone(ESTABELECIMENTO.telefone)}`, margin, doc.internal.pageSize.height - 15);
+                doc.text(ESTABELECIMENTO.agradecimento, margin, doc.internal.pageSize.height - 10);
+
+                doc.save(`${type}_${orc.clientes?.nome || 'orcamento'}_${orc.id}.pdf`);
+                showNotification(`PDF de ${type} gerado!`, 'success');
+            };
+
+            // ===================================================================================
             // INITIALIZATION & EVENT LISTENERS
             // ===================================================================================
 
@@ -2673,9 +3313,40 @@ _${ESTABELECIMENTO.agradecimento}_`;
                 const debouncedRenderServicos = debounce(renderServicos, 300);
                 const debouncedRenderOrcamentos = debounce(renderOrcamentos, 300);
 
+                // Modal elements (selected here for robustness)
+                const confirmModal = $('#confirm-modal'); 
+                const modalConfirmBtn = $('#modal-confirm-btn'); 
+                const modalCancelBtn = $('#modal-cancel-btn'); 
+
                 // Navigation buttons
-                $$('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+                $$('.nav-btn').forEach(b => b.addEventListener('click', (e) => {
+                    showTab(e.currentTarget.dataset.tab);
+                    // Ensure the chart rerenders if going to dashboard
+                    if (e.currentTarget.dataset.tab === 'dashboard') {
+                        updateDashboard();
+                    }
+                }));
                 syncBtn.addEventListener('click', () => fetchAllData(true)); 
+
+                // Dashboard stat cards event listeners
+                $$('.dashboard-grid .stat-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const targetTab = card.dataset.targetTab;
+                        const filterType = card.dataset.filterType; // 'none', 'status'
+                        const filterValue = card.dataset.filterValue; // 'Orçamento', 'Finalizado', etc.
+                        
+                        if (targetTab === 'clientes') {
+                            showTab('clientes');
+                            searchClienteInput.value = ''; // Clear search for clients tab
+                            renderClientes();
+                        } else if (targetTab === 'historico') {
+                            showTab('historico', { status: filterValue }); // Pass status to filter
+                            searchHistoricoInput.value = ''; // Clear search for history tab
+                            filterStartDateInput.value = ''; // Clear date filters
+                            filterEndDateInput.value = '';
+                        }
+                    });
+                });
 
                 // Clients tab event listeners
                 clienteForm.addEventListener('submit', handleClienteSubmit);
@@ -2685,9 +3356,15 @@ _${ESTABELECIMENTO.agradecimento}_`;
                     if (!listItem) return;
                     const id = listItem.dataset.id;
                     if (e.target.closest('.edit-cliente-btn')) handleEditCliente(id); 
-                    if (e.target.closest('.delete-cliente-btn')) handleDeleteCliente(id); 
+                    else if (e.target.closest('.delete-cliente-btn')) handleDeleteCliente(id); 
+                    else if (e.target.closest('.save-inline-edit-cliente-btn')) handleSaveInlineEditCliente(id, listItem);
+                    else if (e.target.closest('.cancel-inline-edit-cliente-btn')) handleCancelInlineEditCliente(id, listItem);
+                    else { // Click on the list item itself to view details
+                        displayClientDetails(id);
+                    }
                 });
                 searchClienteInput.addEventListener('input', debouncedRenderClientes);
+                sortClientesSelect.addEventListener('change', debouncedRenderClientes); // Added sorting event
                 clienteNomeInput.addEventListener('input', () => handleValidationIcon(clienteNomeInput));
                 clienteTelefoneInput.addEventListener('input', (e) => { 
                     e.target.value = formatPhone(e.target.value); 
@@ -2720,9 +3397,12 @@ _${ESTABELECIMENTO.agradecimento}_`;
                     if (!listItem) return;
                     const id = listItem.dataset.id;
                     if (e.target.closest('.edit-servico-btn')) handleEditServico(id); 
-                    if (e.target.closest('.delete-servico-btn')) handleDeleteServico(id); 
+                    else if (e.target.closest('.delete-servico-btn')) handleDeleteServico(id);
+                    else if (e.target.closest('.save-inline-edit-servico-btn')) handleSaveInlineEditServico(id, listItem);
+                    else if (e.target.closest('.cancel-inline-edit-servico-btn')) handleCancelInlineEditServico(id, listItem);
                 });
                 searchServicoInput.addEventListener('input', debouncedRenderServicos);
+                sortServicosSelect.addEventListener('change', debouncedRenderServicos); // Added sorting event
                 servicoDescricaoInput.addEventListener('input', () => handleValidationIcon(servicoDescricaoInput));
                 servicoValorInput.addEventListener('input', () => handleValidationIcon(servicoValorInput));
                 $('#export-servicos-csv').addEventListener('click', () => exportToCsv(state.servicos, 'servicos.csv'));
@@ -2787,10 +3467,20 @@ _${ESTABELECIMENTO.agradecimento}_`;
                 $('#btn-copiar-recibo').addEventListener('click', () => copyAndNotify(generateReciboText, 'Recibo'));
                 $('#btn-whatsapp-recibo').addEventListener('click', () => sendWhatsApp(generateReciboText));
                 
+                // PDF Download buttons
+                $('#btn-download-orcamento-pdf').addEventListener('click', () => generatePdf('orcamento'));
+                $('#btn-download-recibo-pdf').addEventListener('click', () => generatePdf('recibo'));
+
+                // Close client details panel
+                closeClientDetailsBtn.addEventListener('click', () => {
+                    clientDetailsPanel.style.display = 'none';
+                });
+
                 // Global modal confirm/cancel
                 modalCancelBtn.addEventListener('click', hideConfirmModal);
                 modalConfirmBtn.addEventListener('click', () => { 
                     if (typeof onConfirmCallback === 'function') onConfirmCallback(); 
+                    hideConfirmModal(); 
                 });
                 
                 // Back to Top Button Logic
