@@ -3157,7 +3157,6 @@
                 'Excluir Orçamento', 
                 'Esta ação é irreversível. O orçamento e seus itens serão permanentemente removidos.', 
                 async () => { 
-                    if (!state.orcamentoSelecionado) return; 
                     try {
                         const { error } = await db.from('orcamentos').delete().eq('id', state.orcamentoSelecionado.id); 
                         if (error) throw new Error(error.message); 
