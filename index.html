@@ -5,23 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>R.M. Estética Automotiva - Gestor PRO+</title>
     
-    <!-- Google Fonts: Poppins for headings, Inter for body -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <!-- Importa o cliente Supabase via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
 
-    <!-- jsPDF para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js"></script>
 
-    <!-- Estilos CSS -->
     <style>
         :root {
             --bg-dark: #0f172a; /* Darker blue-gray */
@@ -1084,7 +1078,6 @@
         <main>
             <section id="dashboard-tab" class="tab-content active" role="tabpanel">
                 <div class="dashboard-main-grid">
-                    <!-- Dashboard cards are now clickable -->
                     <div class="stat-card" data-target-tab="clientes" data-filter-type="none" tabindex="0" role="button" aria-label="Ver todos os clientes">
                         <div class="icon"><i class="fas fa-users" aria-hidden="true"></i></div>
                         <h3>Clientes</h3>
@@ -1114,14 +1107,12 @@
                 <div class="monthly-stats-chart">
                     <h3>Serviços Finalizados por Mês <i class="fas fa-chart-bar" aria-hidden="true"></i></h3>
                     <div id="monthly-finalized-chart" class="chart-bars">
-                        <!-- Chart.js canvas will be rendered here -->
-                    </div>
+                        </div>
                 </div>
                 <div class="card data-list" style="margin-top: 25px;">
                     <h2>Atividade Recente <i class="fas fa-bolt" aria-hidden="true"></i></h2>
                     <ul id="recent-activity-list" role="list">
-                        <!-- Recent activity items or skeleton loaders -->
-                    </ul>
+                        </ul>
                 </div>
             </section>
             
@@ -1174,15 +1165,13 @@
                             </select>
                         </div>
                         <ul id="clientes-lista" role="list">
-                            <!-- Client list items or skeleton loaders -->
-                        </ul>
+                            </ul>
                         <div class="export-actions">
                             <button id="export-clientes-csv" class="btn btn-sm btn-secondary" aria-label="Exportar Clientes para CSV"><i class="fas fa-file-csv" aria-hidden="true"></i> Exportar CSV</button>
                         </div>
                     </div>
                  </div>
-                 <!-- NEW: Client Details Panel -->
-                <div id="client-details-panel" class="client-details-panel">
+                 <div id="client-details-panel" class="client-details-panel">
                     <button class="close-details-btn" aria-label="Fechar Detalhes do Cliente"><i class="fas fa-times" aria-hidden="true"></i></button>
                     <h2>Detalhes do Cliente <i class="fas fa-user-circle" aria-hidden="true"></i></h2>
                     <div class="client-info">
@@ -1194,8 +1183,7 @@
                     
                     <h3 class="section-title">Histórico de Orçamentos <i class="fas fa-history" aria-hidden="true"></i></h3>
                     <ul id="client-past-orcamentos" class="data-list past-orcamento-list" role="list">
-                        <!-- Past budgets for this client will be loaded here -->
-                    </ul>
+                        </ul>
                 </div>
             </section>
             
@@ -1237,8 +1225,7 @@
                             </select>
                         </div>
                         <ul id="servicos-lista" role="list">
-                            <!-- Service list items or skeleton loaders -->
-                        </ul>
+                            </ul>
                          <div class="export-actions">
                             <button id="export-servicos-csv" class="btn btn-sm btn-secondary" aria-label="Exportar Serviços para CSV"><i class="fas fa-file-csv" aria-hidden="true"></i> Exportar CSV</button>
                         </div>
@@ -1321,8 +1308,7 @@
                             <button id="clear-filters-btn" class="btn btn-sm btn-secondary" aria-label="Limpar Filtros"><i class="fas fa-filter-slash" aria-hidden="true"></i> Limpar Filtros</button>
                         </div>
                         <ul id="historico-lista" role="list">
-                            <!-- History list items or skeleton loaders -->
-                        </ul>
+                            </ul>
                     </div>
                     <div class="card" id="detalhes-orcamento-container" style="display: none;">
                         <h2>Detalhes do Serviço <i class="fas fa-info-circle" aria-hidden="true"></i></h2>
@@ -1391,6 +1377,7 @@
         // ===================================================================================
         const ESTABELECIMENTO = {
             nome: "R.M. Estética Automotiva",
+            cnpj: "18.637.639/0001-48", // CNPJ adicionado
             telefone: "24999486232", // Only numbers for WhatsApp link
             endereco: "Rua 40, TV - Recanto dos Pássaros, Pq. Mambucaba, Angra dos Reis - RJ",
             agradecimento: "Obrigado pela preferência e volte sempre! 👍"
@@ -3020,7 +3007,7 @@
                             .eq('id', id)
                             .single();
                         if (error || !freshData) {
-                             throw new Error(error ? error.message : 'Orçamento não encontrado na base de dados.');
+                            throw new Error(error ? error.message : 'Orçamento não encontrado na base de dados.');
                         }
                         state.orcamentoSelecionado = freshData;
                     } else {
@@ -3181,7 +3168,8 @@
             /** Generates the standard footer for quote/receipt texts. */
             const generateFooter = () => `
 ==================================
-*${ESTABELECIMENTO.nome}*\n` +
+*${ESTABELECIMENTO.nome}*
+*CNPJ:* ${ESTABELECIMENTO.cnpj}\n` +
 `📍 ${ESTABELECIMENTO.endereco}\n` +
 `*📞 Contato:* ${formatPhone(ESTABELECIMENTO.telefone)}\n\n` +
 `_${ESTABELECIMENTO.agradecimento}_`;
@@ -3208,7 +3196,9 @@
 *Desconto:* ${orc.desconto || 0}%
 *VALOR TOTAL:* ${formatCurrency(orc.valor_total)}
 
-*Formas de Pagamento:* ${orc.formas_pagamento || 'Não especificado'}` + generateFooter(); 
+*Formas de Pagamento:* ${orc.formas_pagamento || 'Não especificado'}
+
+*VALIDADE DESTE ORÇAMENTO: 7 DIAS*` + generateFooter(); 
             };
 
             /**
@@ -3310,6 +3300,8 @@
                 doc.text(ESTABELECIMENTO.endereco, margin, y);
                 y += lineHeight;
                 doc.text(`Contato: ${formatPhone(ESTABELECIMENTO.telefone)}`, margin, y);
+                y += lineHeight;
+                doc.text(`CNPJ: ${ESTABELECIMENTO.cnpj}`, margin, y); // CNPJ no cabeçalho
                 y += 10; // Extra space
 
                 // Document Title
@@ -3402,11 +3394,19 @@
                 doc.text(`Formas de Pagamento: ${orc.formas_pagamento || 'Não especificado'}`, margin, y);
                 y += 15;
 
-                // Footer (duplicate of header for final page if it fits, or dedicated space)
+                // Aviso de validade do orçamento
+                if (type === 'orcamento') {
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(239, 68, 68); // primary-red
+                    doc.text("Este orçamento é válido por 7 dias.", margin, y);
+                    doc.setFont('helvetica', 'normal');
+                    y += 15;
+                }
+
+                // Footer
                 doc.setFontSize(10);
                 doc.setTextColor(148, 163, 184); // text-muted
-                doc.text(`Local: ${ESTABELECIMENTO.endereco}`, margin, doc.internal.pageSize.height - 20);
-                doc.text(`Contato: ${formatPhone(ESTABELECIMENTO.telefone)}`, margin, doc.internal.pageSize.height - 15);
                 doc.text(ESTABELECIMENTO.agradecimento, margin, doc.internal.pageSize.height - 10);
 
                 doc.save(`${type}_${orc.clientes?.nome || 'orcamento'}_${orc.id}.pdf`);
