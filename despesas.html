@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despesas - R.M. Estética Automotiva</title>
+    
+    <!-- Links para Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Scripts de Bibliotecas -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Estilos CSS -->
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-light: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary-red: #ef4444;
+            --primary-red-dark: #dc2626;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --border-color: #475569;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --header-border: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Poppins', sans-serif; color: var(--text-light); }
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px; border-bottom: 2px solid var(--header-border);
+            padding-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+        header h1 { color: var(--primary-red); font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        header h1 i { color: var(--accent-blue); }
+        nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+        .nav-btn, a.nav-btn {
+            padding: 12px 15px; background-color: var(--bg-card); color: var(--text-muted);
+            border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer;
+            transition: all 0.3s; font-size: 0.9rem; font-weight: 500; text-align: center;
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            gap: 8px; box-shadow: 0 2px 5px var(--shadow-color); text-decoration: none;
+        }
+        .card {
+            background-color: var(--bg-card); padding: 25px; border-radius: 15px;
+            border: 1px solid var(--border-color); box-shadow: 0 8px 25px var(--shadow-color);
+            margin-bottom: 25px;
+        }
+        .card h2 {
+            margin-top: 0; margin-bottom: 25px; color: var(--primary-red);
+            border-bottom: 2px solid var(--primary-red); padding-bottom: 12px;
+            font-size: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 10px;
+        }
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
+        input, select, textarea {
+            width: 100%; padding: 15px; background-color: var(--bg-input);
+            border: 1.5px solid var(--border-color); border-radius: 10px;
+            color: var(--text-light); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="date"], input[type="month"] { color-scheme: dark; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25); }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer;
+            font-weight: 600; text-transform: uppercase; font-size: 0.9rem;
+            transition: all 0.3s; width: 100%; text-align: center; margin-top: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+        .btn-primary { background-color: var(--primary-red); color: white; }
+        .btn-primary:hover { background-color: var(--primary-red-dark); }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-sm { padding: 8px 12px; font-size: 0.8rem; width: auto; text-transform: none; }
+        .data-list ul { list-style: none; padding: 0; max-height: 500px; overflow-y: auto; margin-top: 10px; }
+        .data-list li {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px;
+            background-color: var(--bg-input); border-radius: 10px; margin-bottom: 12px;
+            flex-wrap: wrap; gap: 15px; border-left: 5px solid var(--border-color);
+            transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .data-list li:hover { border-left-color: var(--primary-red); background-color: #2b3a4e; }
+        .empty-list-message { text-align: center; padding: 40px 20px; }
+        .filter-options { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        #notification { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%); padding: 15px 20px; border-radius: 10px; color: white; z-index: 3000; text-align: center; visibility: hidden; transition: all 0.6s; max-width: 90%; box-shadow: 0 6px 20px rgba(0,0,0,0.4); font-weight: 500; }
+        #notification.show { transform: translate(-50%, 0); visibility: visible; }
+        #notification.success { background-color: var(--accent-green); }
+        #notification.error { background-color: #ef4444; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .metric-card {
+            background-color: var(--bg-input);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 5px solid var(--accent-blue);
+        }
+        .metric-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .metric-card p {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-light);
+            line-height: 1;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+        .chart-container {
+            padding: 20px;
+            background-color: var(--bg-card);
+            border-radius: 15px;
+            margin-top: 25px;
+        }
+
+        /* Media Queries para telas maiores */
+        @media (min-width: 768px) {
+            header h1 { font-size: 2rem; }
+            .nav-btn, a.nav-btn { font-size: 1rem; flex-grow: 0; }
+            .card { padding: 30px; }
+            .card h2 { font-size: 1.7rem; }
+            .btn { font-size: 0.95rem; }
+            .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (min-width: 1024px) {
+            .main-layout { grid-template-columns: 1fr 2fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1><i class="fas fa-car-wash" aria-hidden="true"></i> R.M. Estética PRO+</h1>
+        </header>
+
+        <nav role="navigation" aria-label="Navegação Principal">
+            <a href="index.html" class="nav-btn"><i class="fas fa-chart-line" aria-hidden="true"></i> Painel</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-users" aria-hidden="true"></i> Clientes</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-tools" aria-hidden="true"></i> Serviços</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-file-invoice" aria-hidden="true"></i> Orçamento</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-history" aria-hidden="true"></i> Histórico</a>
+            <a href="crm.html" class="nav-btn"><i class="fas fa-headset" aria-hidden="true"></i> CRM</a>
+            <a href="despesas.html" class="nav-btn active"><i class="fas fa-wallet" aria-hidden="true"></i> Despesas</a>
+        </nav>
+
+        <main>
+            <!-- Painel de Métricas de Despesas -->
+            <div class="metrics-grid">
+                <div class="metric-card" style="border-left-color: var(--primary-red);">
+                    <h3>Total Gasto no Mês</h3>
+                    <p id="metric-total-gasto">R$ 0,00</p>
+                </div>
+                <div class="metric-card" style="border-left-color: var(--accent-orange);">
+                    <h3>Despesa Média Diária</h3>
+                    <p id="metric-media-diaria">R$ 0,00</p>
+                </div>
+                <div class="metric-card" style="border-left-color: var(--accent-green);">
+                    <h3>Categoria com Maior Gasto</h3>
+                    <p id="metric-maior-categoria" style="font-size: 1.5rem; padding-top: 1rem;">N/A</p>
+                </div>
+            </div>
+            
+            <div class="main-layout">
+                <!-- Coluna da Esquerda: Formulário -->
+                <div class="card">
+                    <h2 id="despesa-form-title">Registrar Despesa</h2>
+                    <form id="despesa-form">
+                        <input type="hidden" id="despesa-id">
+                        <div class="form-group">
+                            <label for="despesa-descricao">Descrição</label>
+                            <input type="text" id="despesa-descricao" required placeholder="Ex: Compra de cera automotiva">
+                        </div>
+                        <div class="form-group">
+                            <label for="despesa-valor">Valor (R$)</label>
+                            <input type="number" id="despesa-valor" step="0.01" min="0.01" required placeholder="150,00">
+                        </div>
+                        <div class="form-group">
+                            <label for="despesa-data">Data da Despesa</label>
+                            <input type="date" id="despesa-data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="despesa-categoria">Categoria</label>
+                            <select id="despesa-categoria" required>
+                                <option value="Produtos">Produtos de Limpeza</option>
+                                <option value="Aluguel/Contas">Aluguel/Contas (Água, Luz)</option>
+                                <option value="Marketing">Marketing e Publicidade</option>
+                                <option value="Ferramentas">Ferramentas e Equipamentos</option>
+                                <option value="Salários">Salários/Mão de Obra</option>
+                                <option value="Impostos">Impostos e Taxas</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Despesa</button>
+                        <button type="button" id="cancelar-edicao-despesa" class="btn btn-secondary" style="display: none;"><i class="fas fa-times-circle"></i> Cancelar Edição</button>
+                    </form>
+                </div>
+                
+                <!-- Coluna da Direita: Histórico de Despesas -->
+                <div class="card data-list">
+                    <h2>Histórico de Despesas</h2>
+                     <div class="filter-options">
+                        <input type="month" id="filter-month" title="Filtrar por Mês">
+                        <button id="export-csv-btn" class="btn btn-sm btn-secondary" style="margin-left:auto;"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                    </div>
+                    <ul id="despesas-lista"></ul>
+                </div>
+            </div>
+
+            <!-- Gráfico de Despesas -->
+            <div class="chart-container">
+                <h2 style="text-align: center; border: none; padding: 0;">Distribuição de Despesas por Categoria (Mês Atual)</h2>
+                <canvas id="despesas-chart"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <div id="notification" role="status" aria-live="polite"></div>
+
+    <script type="module">
+        const SUPABASE_URL = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
+        
+        if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY.includes('YOUR_SUPABASE_KEY')) {
+            document.body.innerHTML = `<div style="padding: 40px; text-align: center;"><h1>Erro de Configuração</h1><p>As credenciais do Supabase não foram configuradas corretamente.</p></div>`;
+            throw new Error("Supabase credentials not configured.");
+        }
+
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let state = {
+                despesas: [],
+                editandoDespesaId: null,
+                chartInstance: null
+            };
+
+            const $ = (s) => document.querySelector(s);
+
+            const despesaForm = $('#despesa-form');
+            const despesaIdInput = $('#despesa-id');
+            const despesaDescricaoInput = $('#despesa-descricao');
+            const despesaValorInput = $('#despesa-valor');
+            const despesaDataInput = $('#despesa-data');
+            const despesaCategoriaInput = $('#despesa-categoria');
+            const despesasLista = $('#despesas-lista');
+            const cancelarBtn = $('#cancelar-edicao-despesa');
+            const filterMonthInput = $('#filter-month');
+            const exportCsvBtn = $('#export-csv-btn');
+            const notification = $('#notification');
+
+            // --- FUNÇÕES UTILITÁRIAS ---
+            const showNotification = (message, type = 'success') => {
+                if (!notification) return;
+                notification.textContent = message;
+                notification.className = `show ${type}`;
+                setTimeout(() => notification.classList.remove('show'), 3500);
+            };
+            
+            const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+            const formatDate = (dateString) => new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+            // --- LÓGICA PRINCIPAL ---
+            const renderDespesas = () => {
+                const selectedMonth = filterMonthInput.value; // yyyy-MM
+                let filteredDespesas = state.despesas;
+
+                if (selectedMonth) {
+                    filteredDespesas = state.despesas.filter(d => d.data.startsWith(selectedMonth));
+                }
+
+                if (filteredDespesas.length === 0) {
+                    despesasLista.innerHTML = `<li class="empty-list-message"><p>Nenhuma despesa encontrada para este período.</p></li>`;
+                } else {
+                    despesasLista.innerHTML = filteredDespesas.map(d => `
+                        <li data-id="${d.id}">
+                            <div>
+                                <strong>${d.descricao}</strong><br>
+                                <small>${d.categoria} - ${formatDate(d.data)}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <strong style="color: var(--primary-red);">${formatCurrency(d.valor)}</strong>
+                                <div>
+                                    <button class="btn btn-sm btn-secondary edit-btn" style="margin-top: 5px;"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-danger delete-btn" style="margin-top: 5px;"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                        </li>
+                    `).join('');
+                }
+            };
+
+            const updateMetricsAndChart = () => {
+                const now = new Date();
+                const currentMonthISO = now.toISOString().slice(0, 7); // yyyy-MM
+                
+                const despesasMes = state.despesas.filter(d => d.data.startsWith(currentMonthISO));
+                
+                const totalGasto = despesasMes.reduce((sum, d) => sum + d.valor, 0);
+                $('#metric-total-gasto').textContent = formatCurrency(totalGasto);
+
+                const diasNoMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                const mediaDiaria = totalGasto > 0 ? totalGasto / diasNoMes : 0;
+                $('#metric-media-diaria').textContent = formatCurrency(mediaDiaria);
+
+                const gastosPorCategoria = despesasMes.reduce((acc, d) => {
+                    acc[d.categoria] = (acc[d.categoria] || 0) + d.valor;
+                    return acc;
+                }, {});
+
+                let maiorCategoria = 'N/A';
+                let maiorValor = 0;
+                for (const categoria in gastosPorCategoria) {
+                    if (gastosPorCategoria[categoria] > maiorValor) {
+                        maiorValor = gastosPorCategoria[categoria];
+                        maiorCategoria = categoria;
+                    }
+                }
+                $('#metric-maior-categoria').textContent = maiorCategoria;
+                
+                renderChart(gastosPorCategoria);
+            };
+
+            const renderChart = (data) => {
+                const canvas = $('#despesas-chart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (state.chartInstance) {
+                    state.chartInstance.destroy();
+                }
+
+                const computedStyles = getComputedStyle(document.documentElement);
+                const borderColor = computedStyles.getPropertyValue('--bg-card').trim();
+                const textColor = computedStyles.getPropertyValue('--text-light').trim();
+
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+                
+                state.chartInstance = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Gastos por Categoria',
+                            data: values,
+                            backgroundColor: [
+                                '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#8b5cf6', '#eab308', '#64748b'
+                            ],
+                            borderColor: borderColor,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const resetForm = () => {
+                despesaForm.reset();
+                despesaIdInput.value = '';
+                state.editandoDespesaId = null;
+                $('#despesa-form-title').textContent = 'Registrar Despesa';
+                cancelarBtn.style.display = 'none';
+                despesaDataInput.valueAsDate = new Date();
+            };
+
+            const handleFormSubmit = async (e) => {
+                e.preventDefault();
+                const data = {
+                    descricao: despesaDescricaoInput.value,
+                    valor: parseFloat(despesaValorInput.value),
+                    data: despesaDataInput.value,
+                    categoria: despesaCategoriaInput.value
+                };
+
+                let error;
+                if (state.editandoDespesaId) {
+                    ({ error } = await db.from('despesas').update(data).eq('id', state.editandoDespesaId));
+                } else {
+                    ({ error } = await db.from('despesas').insert(data));
+                }
+
+                if (error) {
+                    showNotification(`Erro ao salvar: ${error.message}`, 'error');
+                } else {
+                    showNotification('Despesa salva com sucesso!', 'success');
+                    resetForm();
+                    fetchAllData();
+                }
+            };
+
+            const handleListClick = (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const li = target.closest('li');
+                const id = li.dataset.id;
+
+                if (target.classList.contains('edit-btn')) {
+                    const despesa = state.despesas.find(d => d.id == id);
+                    despesaIdInput.value = despesa.id;
+                    despesaDescricaoInput.value = despesa.descricao;
+                    despesaValorInput.value = despesa.valor;
+                    despesaDataInput.value = despesa.data;
+                    despesaCategoriaInput.value = despesa.categoria;
+                    state.editandoDespesaId = id;
+                    $('#despesa-form-title').textContent = 'Editar Despesa';
+                    cancelarBtn.style.display = 'inline-block';
+                    despesaDescricaoInput.focus();
+                } else if (target.classList.contains('delete-btn')) {
+                    showConfirmModal('Excluir Despesa?', 'Esta ação é irreversível.', async () => {
+                        const { error } = await db.from('despesas').delete().eq('id', id);
+                        if (error) {
+                            showNotification(`Erro ao excluir: ${error.message}`, 'error');
+                        } else {
+                            showNotification('Despesa excluída com sucesso.', 'success');
+                            fetchAllData();
+                        }
+                    });
+                }
+            };
+            
+            const exportToCsv = () => {
+                let dataToExport = state.despesas;
+                const selectedMonth = filterMonthInput.value;
+                if (selectedMonth) {
+                    dataToExport = state.despesas.filter(d => d.data.startsWith(selectedMonth));
+                }
+
+                if (dataToExport.length === 0) {
+                    showNotification('Nenhuma despesa para exportar.', 'warning');
+                    return;
+                }
+
+                const headers = ['Data', 'Descrição', 'Categoria', 'Valor'];
+                const csvRows = [headers.join(',')];
+
+                for (const row of dataToExport) {
+                    const values = [
+                        formatDate(row.data),
+                        `"${row.descricao}"`,
+                        row.categoria,
+                        row.valor.toFixed(2)
+                    ];
+                    csvRows.push(values.join(','));
+                }
+
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.setAttribute('href', url);
+                a.setAttribute('download', `despesas_${selectedMonth || 'geral'}.csv`);
+                a.click();
+            };
+
+            const fetchAllData = async () => {
+                const { data, error } = await db.from('despesas').select('*').order('data', { ascending: false });
+                
+                if (error) {
+                    showNotification('Erro ao carregar despesas.', 'error');
+                    console.error(error);
+                } else {
+                    state.despesas = data;
+                }
+                
+                renderDespesas();
+                updateMetricsAndChart();
+            };
+
+            // --- EVENT LISTENERS ---
+            despesaForm.addEventListener('submit', handleFormSubmit);
+            despesasLista.addEventListener('click', handleListClick);
+            cancelarBtn.addEventListener('click', resetForm);
+            filterMonthInput.addEventListener('change', renderDespesas);
+            exportCsvBtn.addEventListener('click', exportToCsv);
+
+            // Inicializa a página
+            const now = new Date();
+            const currentMonthISO = now.toISOString().slice(0, 7);
+            filterMonthInput.value = currentMonthISO;
+            despesaDataInput.valueAsDate = now;
+            fetchAllData();
+        });
+    </script>
+</body>
+</html>
