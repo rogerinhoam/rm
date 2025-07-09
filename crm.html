@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - R.M. Estética Automotiva</title>
+    
+    <!-- Links para Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Scripts de Bibliotecas -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Estilos CSS -->
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --bg-modal: #131c31;
+            --text-light: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary-red: #ef4444;
+            --primary-red-dark: #dc2626;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --border-color: #475569;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --header-border: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Poppins', sans-serif; color: var(--text-light); }
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px; border-bottom: 2px solid var(--header-border);
+            padding-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+        header h1 { color: var(--primary-red); font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        header h1 i { color: var(--accent-blue); }
+        nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+        .nav-btn, a.nav-btn {
+            padding: 12px 15px; background-color: var(--bg-card); color: var(--text-muted);
+            border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer;
+            transition: all 0.3s; font-size: 0.9rem; font-weight: 500; text-align: center;
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            gap: 8px; box-shadow: 0 2px 5px var(--shadow-color); text-decoration: none;
+        }
+        .card {
+            background-color: var(--bg-card); padding: 25px; border-radius: 15px;
+            border: 1px solid var(--border-color); box-shadow: 0 8px 25px var(--shadow-color);
+            margin-bottom: 25px;
+        }
+        .card h2 {
+            margin-top: 0; margin-bottom: 25px; color: var(--primary-red);
+            border-bottom: 2px solid var(--primary-red); padding-bottom: 12px;
+            font-size: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 10px;
+        }
+        .crm-grid { display: grid; grid-template-columns: 1fr; gap: 25px; }
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
+        input, select, textarea {
+            width: 100%; padding: 15px; background-color: var(--bg-input);
+            border: 1.5px solid var(--border-color); border-radius: 10px;
+            color: var(--text-light); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        textarea { resize: vertical; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25); }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer;
+            font-weight: 600; text-transform: uppercase; font-size: 0.9rem;
+            transition: all 0.3s; width: 100%; text-align: center; margin-top: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+        .btn-sm { padding: 8px 12px; font-size: 0.8rem; width: auto; text-transform: none; }
+        .data-list ul { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; margin-top: 10px; }
+        .data-list li {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px;
+            background-color: var(--bg-input); border-radius: 10px; margin-bottom: 12px;
+            flex-wrap: wrap; gap: 15px; border-left: 5px solid var(--border-color);
+            transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .empty-list-message { text-align: center; padding: 40px 20px; }
+        .filter-options { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .filter-options .btn { margin-top: 0; flex-grow: 1; padding: 10px; font-size: 0.8rem;}
+        #notification { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%); padding: 15px 20px; border-radius: 10px; color: white; z-index: 3000; text-align: center; visibility: hidden; transition: all 0.6s; max-width: 90%; box-shadow: 0 6px 20px rgba(0,0,0,0.4); font-weight: 500; }
+        #notification.show { transform: translate(-50%, 0); visibility: visible; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 10px; backdrop-filter: blur(5px); animation: fadeIn 0.3s ease-out; }
+        .modal-overlay.active { display: flex; }
+        
+        /* Estilos do Modal de Disparo */
+        #dispatch-view-modal .modal-content {
+            background-color: var(--bg-modal);
+            width: 100%;
+            max-width: 1200px;
+            height: 95vh;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInScale 0.5s;
+        }
+        .dispatch-header {
+            padding: 15px 20px;
+        }
+        .dispatch-body {
+            display: flex; /* Alterado para flexbox */
+            flex-direction: column; /* Empilha verticalmente em mobile */
+            gap: 15px;
+            padding: 15px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        .dispatch-client-list-container {
+            height: 40%; /* Altura definida para a lista de clientes */
+        }
+        .dispatch-composer {
+            height: 60%; /* Altura definida para o compositor */
+        }
+        .dispatch-client-list-container, .dispatch-composer {
+            background-color: var(--bg-card);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #dispatch-client-list {
+            list-style: none; padding: 0; margin: 0;
+            overflow-y: auto; flex-grow: 1;
+        }
+        .dispatch-composer {
+            overflow-y: auto;
+        }
+        #dispatch-client-list li {
+            padding: 12px 15px; border-radius: 8px;
+            cursor: pointer; transition: background-color 0.3s, opacity 0.3s;
+            margin-bottom: 8px;
+        }
+        #dispatch-client-list li.active { background-color: var(--accent-blue); color: white; }
+        #dispatch-client-list li.contacted { background-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; opacity: 0.6; }
+        #composer-placeholder { text-align: center; margin: auto; color: var(--text-muted); }
+        #composer-content.hidden, #composer-placeholder.hidden { display: none; }
+        .composer-actions { display: flex; gap: 15px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .file-input-label {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .file-input-label:hover { background-color: var(--border-color); }
+        #composer-image-input { display: none; }
+
+        /* Estilos das Métricas */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .metric-card {
+            background-color: var(--bg-input);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 5px solid var(--accent-blue);
+        }
+        .metric-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .metric-card p {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-light);
+            line-height: 1;
+        }
+        .client-value {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+        
+        /* Media Queries para telas maiores */
+        @media (min-width: 768px) {
+            header h1 { font-size: 2rem; }
+            .nav-btn, a.nav-btn { font-size: 1rem; flex-grow: 0; }
+            .card { padding: 30px; }
+            .card h2 { font-size: 1.7rem; }
+            .btn { font-size: 0.95rem; }
+            .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+            .dispatch-body { flex-direction: row; } /* Volta para o layout lado a lado */
+            .dispatch-client-list-container, .dispatch-composer { height: auto; }
+        }
+        
+        @media (min-width: 1024px) {
+            .crm-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (min-width: 1280px) {
+            .crm-grid { grid-template-columns: 4fr 5fr 4fr; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInScale { 
+            from { opacity: 0; transform: scale(0.95); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1><i class="fas fa-car-wash" aria-hidden="true"></i> R.M. Estética PRO+</h1>
+        </header>
+
+        <nav role="navigation" aria-label="Navegação Principal">
+            <a href="index.html" class="nav-btn"><i class="fas fa-chart-line" aria-hidden="true"></i> Painel</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-users" aria-hidden="true"></i> Clientes</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-tools" aria-hidden="true"></i> Serviços</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-file-invoice" aria-hidden="true"></i> Orçamento</a>
+            <a href="index.html" class="nav-btn"><i class="fas fa-history" aria-hidden="true"></i> Histórico</a>
+            <a href="crm.html" class="nav-btn active"><i class="fas fa-headset" aria-hidden="true"></i> CRM</a>
+            <a href="despesas.html" class="nav-btn"><i class="fas fa-wallet" aria-hidden="true"></i> Despesas</a>
+        </nav>
+
+        <main>
+            <!-- Painel de Métricas do CRM -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Total de Interações</h3>
+                    <p id="metric-total-interactions">0</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Contatos no Mês</h3>
+                    <p id="metric-month-interactions">0</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Follow-ups Agendados</h3>
+                    <p id="metric-scheduled-followups">0</p>
+                </div>
+            </div>
+
+            <!-- Card de Gestão de Follow-up -->
+            <div class="card">
+                <h2><i class="fas fa-lightbulb" aria-hidden="true"></i> Gestão de Follow-ups</h2>
+                <p style="color: var(--text-muted); margin-top: -20px; margin-bottom: 20px;">Sugestões automáticas baseadas no tempo de retorno dos serviços.</p>
+                <div class="data-list">
+                    <ul id="suggested-followups-list"></ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-users-viewfinder" aria-hidden="true"></i> Segmentação de Clientes</h2>
+                <div class="filter-options">
+                    <div id="inactive-period-filter" style="display: flex; flex-grow: 1; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-secondary active" data-period="all">Todos</button>
+                        <button class="btn btn-secondary" data-period="15">Inativos 15d</button>
+                        <button class="btn btn-secondary" data-period="30">Inativos 30d</button>
+                        <button class="btn btn-secondary" data-period="45">Inativos 45d</button>
+                        <button class="btn btn-secondary" data-period="60">Inativos 60d+</button>
+                    </div>
+                    <button id="bulk-contact-btn" class="btn btn-primary" style="margin-left: auto;"><i class="fas fa-bullhorn"></i> Contatar Lista</button>
+                </div>
+                <div class="data-list">
+                    <ul id="inactive-clients-list"></ul>
+                </div>
+            </div>
+
+            <div class="crm-grid">
+                <div class="card">
+                    <h2><i class="fas fa-comment-dots" aria-hidden="true"></i> Modelos de Mensagem</h2>
+                    <div class="message-template form-group">
+                        <label for="msg-template-1">Modelo 1: Lembrete Amigável (Inativos)</label>
+                        <textarea id="msg-template-1" rows="5">Olá, [NOME DO CLIENTE]! Tudo bem? Aqui é da R.M. Estética Automotiva. Notamos que já faz mais de [TEMPO] desde sua última visita. Só queríamos saber se está tudo certo com o seu carro e nos colocar à disposição! Precisando de algo, é só chamar. 👍</textarea>
+                    </div>
+                    <div class="message-template form-group">
+                        <label for="msg-template-2">Modelo 2: Oferta Especial (Inativos)</label>
+                        <textarea id="msg-template-2" rows="5">Olá, [NOME DO CLIENTE]! Da R.M. Estética Automotiva. Como já se passaram mais de [TEMPO] da sua última visita, estamos com uma condição especial para você: 10% de desconto na cristalização dos vidros. Que tal dar um trato no carro? Aguardamos seu contato! ✨</textarea>
+                    </div>
+                     <div class="message-template form-group">
+                        <label for="msg-template-3">Modelo 3: Manutenção (Inativos)</label>
+                        <textarea id="msg-template-3" rows="5">Olá [NOME DO CLIENTE], tudo joia? Aqui da R.M. Estética Automotiva. Passando para lembrar que, como já faz mais de [TEMPO] desde o último serviço, a manutenção da estética do seu carro é importante para manter o valor e a beleza dele. Quando pretende fazer a próxima? Estamos à disposição! 🚗</textarea>
+                    </div>
+                    <div class="message-template form-group">
+                        <label for="msg-template-4">Modelo 4: Contato Geral</label>
+                        <textarea id="msg-template-4" rows="5">Olá, [NOME DO CLIENTE]! Tudo bem? Da R.M. Estética Automotiva. Estamos passando para lembrar que estamos à disposição para cuidar da estética do seu carro. Qualquer dúvida ou para agendar um serviço, é só chamar! 🚗✨</textarea>
+                    </div>
+                    <div class="message-template form-group">
+                        <label for="msg-template-5">Modelo 5: Promoção da Semana</label>
+                        <textarea id="msg-template-5" rows="5">Olá, [NOME DO CLIENTE]! 📢 PROMOÇÃO DA SEMANA na R.M. Estética Automotiva! Lavagem detalhada + cera protetora por um preço imperdível. Deixe seu carro a brilhar! Vagas limitadas. Responda para agendar! 🤩</textarea>
+                    </div>
+                    <div class="message-template form-group">
+                        <label for="msg-template-6">Modelo 6: Serviço Sazonal</label>
+                        <textarea id="msg-template-6" rows="5">Olá, [NOME DO CLIENTE]! A chuva chegou e com ela a dificuldade de dirigir? A cristalização de vidros repele a água e aumenta muito a sua segurança. Garanta sua visibilidade na estrada. Fale connosco e agende seu horário! 🌧️➡️☀️</textarea>
+                    </div>
+                </div>
+
+                <div class="card data-list">
+                    <h2><i class="fas fa-history" aria-hidden="true"></i> Histórico de Interações</h2>
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="search-crm" placeholder="Buscar por cliente ou nota..." aria-label="Pesquisar Interações">
+                    </div>
+                    <ul id="crm-interaction-list"></ul>
+                </div>
+
+                <div>
+                    <div class="card">
+                        <h2><i class="fas fa-plus-circle" aria-hidden="true"></i> Registrar Nova Interação</h2>
+                        <form id="crm-interaction-form">
+                            <div class="form-group">
+                                <label for="crm-cliente-select">Cliente</label>
+                                <select id="crm-cliente-select" required aria-required="true"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="crm-interaction-type">Tipo de Interação</label>
+                                <select id="crm-interaction-type" required aria-required="true">
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Chamada">Chamada</option>
+                                    <option value="Visita">Visita</option>
+                                    <option value="Email">E-mail</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="crm-notes">Notas</label>
+                                <textarea id="crm-notes" rows="4" placeholder="Descreva o contato com o cliente..." required aria-required="true"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="crm-follow-up-date">Agendar Follow-up (Opcional)</label>
+                                <input type="date" id="crm-follow-up-date">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save" aria-hidden="true"></i> Salvar Interação</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modal de Disparo -->
+    <div id="dispatch-view-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="dispatch-header">
+                <h3 id="dispatch-view-title">Contatar Clientes</h3>
+                <button id="dispatch-view-close-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="dispatch-body">
+                <div class="dispatch-client-list-container">
+                    <h4>Lista de Clientes</h4>
+                    <ul id="dispatch-client-list"></ul>
+                </div>
+                <div class="dispatch-composer">
+                    <div id="composer-placeholder">
+                        <p><i class="fas fa-arrow-left"></i> Selecione um cliente na lista para começar.</p>
+                    </div>
+                    <div id="composer-content" class="hidden">
+                        <h4>Enviando para: <strong id="composer-client-name"></strong></h4>
+                        <div class="form-group">
+                            <label for="composer-template-select">Usar Modelo:</label>
+                            <select id="composer-template-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="composer-message-body">Mensagem:</label>
+                            <textarea id="composer-message-body" rows="8"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="composer-image-input" class="file-input-label"><i class="fas fa-paperclip"></i> Anexar Imagem</label>
+                            <input type="file" id="composer-image-input" accept="image/*"/>
+                            <div class="image-preview-container" id="image-preview-wrapper" style="display: none;">
+                                <img id="composer-image-preview" src="" alt="Pré-visualização da imagem"/>
+                                <button id="remove-image-btn" class="btn btn-sm btn-danger"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="composer-actions">
+                            <button id="send-dispatch-message-btn" class="btn btn-success" disabled><i class="fab fa-whatsapp"></i> Enviar via WhatsApp</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elementos Globais para Notificação e Confirmação -->
+    <div id="notification" role="status" aria-live="polite"></div>
+    <div id="confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <h3 id="modal-title">Confirmar Ação</h3>
+            <p id="modal-message">Você tem certeza?</p>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn btn-secondary" aria-label="Cancelar"><i class="fas fa-ban" aria-hidden="true"></i> Cancelar</button>
+                <button id="modal-confirm-btn" class="btn btn-danger" aria-label="Confirmar"><i class="fas fa-check-circle" aria-hidden="true"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const SUPABASE_URL = 'https://uymunsavnpfcsuznrugi.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5bXVuc2F2bnBmY3N1em5ydWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODU3ODgsImV4cCI6MjA2NjM2MTc4OH0.Kz__-jB9SsD-w7SuwlYCWPuEOcOX9epRE9CB5jd4eFY';
+        
+        if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY.includes('YOUR_SUPABASE_KEY')) {
+            document.body.innerHTML = `<div style="padding: 40px; text-align: center;"><h1>Erro de Configuração</h1><p>As credenciais do Supabase não foram configuradas corretamente.</p></div>`;
+            throw new Error("Supabase credentials not configured.");
+        }
+
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let state = {
+                clientes: [],
+                interactions: [],
+                orcamentos: [],
+                servicos: [],
+                activeDispatchClient: null,
+                persistentImageDataURL: null
+            };
+
+            const $ = (s) => document.querySelector(s);
+            
+            const crmInteractionForm = $('#crm-interaction-form');
+            const crmClienteSelect = $('#crm-cliente-select');
+            const crmInteractionList = $('#crm-interaction-list');
+            const searchCrmInput = $('#search-crm');
+            const inactiveClientsList = $('#inactive-clients-list');
+            const inactivePeriodFilter = $('#inactive-period-filter');
+            const bulkContactBtn = $('#bulk-contact-btn');
+            const notification = $('#notification');
+            const confirmModal = $('#confirm-modal');
+            const dispatchViewModal = $('#dispatch-view-modal');
+            const suggestedFollowupsList = $('#suggested-followups-list');
+            let onConfirmCallback = null;
+
+            // --- FUNÇÕES UTILITÁRIAS ---
+            const showNotification = (message, type = 'success') => {
+                if (!notification) return;
+                notification.textContent = message;
+                notification.className = `show ${type}`;
+                setTimeout(() => notification.classList.remove('show'), 3500);
+            };
+            
+            const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+            const formatDateTime = (dateString) => dateString ? new Date(dateString).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'}) : 'N/A';
+            
+            const renderEmptyState = (message, suggestion) => `<div class="empty-list-message"><p><i class="fas fa-info-circle"></i> ${message}</p><small>${suggestion}</small></div>`;
+
+            const showConfirmModal = (title, message, callback) => {
+                if (!confirmModal) return;
+                confirmModal.querySelector('#modal-title').textContent = title;
+                confirmModal.querySelector('#modal-message').textContent = message;
+                onConfirmCallback = callback;
+                confirmModal.classList.add('active');
+            };
+
+            const hideConfirmModal = () => {
+                if (confirmModal) confirmModal.classList.remove('active');
+                onConfirmCallback = null;
+            };
+
+            const debounce = (func, delay) => {
+                let timeout;
+                return (...args) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
+            
+            // --- LÓGICA PRINCIPAL ---
+
+            const populateClientSelect = () => {
+                if (state.clientes.length === 0) {
+                    crmClienteSelect.innerHTML = '<option value="">Nenhum cliente cadastrado...</option>';
+                    crmClienteSelect.disabled = true;
+                } else {
+                    const sortedClients = [...state.clientes].sort((a, b) => a.nome.localeCompare(b.nome));
+                    crmClienteSelect.disabled = false;
+                    crmClienteSelect.innerHTML = '<option value="">Selecione um cliente...</option>' +
+                        sortedClients.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+                }
+            };
+
+            const renderAllLists = () => {
+                renderCrmInteractionList();
+                renderInactiveClients();
+                renderCrmMetrics();
+                renderSuggestedFollowUps();
+            };
+            
+            const renderCrmMetrics = () => {
+                const totalInteractions = state.interactions.length;
+                
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const monthInteractions = state.interactions.filter(i => new Date(i.created_at) >= startOfMonth).length;
+
+                const scheduledFollowups = state.interactions.filter(i => i.follow_up_date && new Date(i.follow_up_date) >= now).length;
+
+                $('#metric-total-interactions').textContent = totalInteractions;
+                $('#metric-month-interactions').textContent = monthInteractions;
+                $('#metric-scheduled-followups').textContent = scheduledFollowups;
+            };
+
+            const renderCrmInteractionList = () => {
+                if (!crmInteractionList) return;
+                const searchTerm = searchCrmInput.value.toLowerCase().trim();
+                const filteredInteractions = state.interactions.filter(i =>
+                    (i.clientes?.nome && i.clientes.nome.toLowerCase().includes(searchTerm)) ||
+                    (i.notes && i.notes.toLowerCase().includes(searchTerm))
+                );
+
+                if (filteredInteractions.length === 0) {
+                    crmInteractionList.innerHTML = renderEmptyState('Nenhuma interação encontrada.', 'Use a busca ou registre uma nova interação.');
+                } else {
+                    crmInteractionList.innerHTML = filteredInteractions.map(i => {
+                        const iconClass = { 'Chamada': 'fa-phone-alt', 'WhatsApp': 'fab fa-whatsapp', 'Visita': 'fa-map-marker-alt', 'Email': 'fa-envelope', 'Outro': 'fa-comment-dots' }[i.interaction_type] || 'fa-comment-dots';
+                        return `
+                            <li data-id="${i.id}">
+                                <div>
+                                    <strong><i class="fas ${iconClass} interaction-icon"></i> ${i.clientes?.nome || 'Cliente Removido'}</strong><br>
+                                    <small>${i.notes}</small><br>
+                                    <small><em>Em: ${formatDateTime(i.created_at)}</em></small>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="btn btn-sm btn-danger delete-interaction-btn" data-id="${i.id}"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </li>`;
+                    }).join('');
+                }
+            };
+
+            const renderSuggestedFollowUps = () => {
+                if (!suggestedFollowupsList) return;
+
+                const suggestions = [];
+                const now = new Date();
+
+                const clientLastServices = {};
+                state.orcamentos.forEach(orc => {
+                    if (orc.cliente_id && orc.status === 'Finalizado') {
+                        orc.orcamento_itens.forEach(item => {
+                            const servicoInfo = state.servicos.find(s => s.id === item.servico_id);
+                            if (servicoInfo && servicoInfo.dias_retorno) {
+                                const lastServiceDate = new Date(orc.updated_at);
+                                if (!clientLastServices[orc.cliente_id] || lastServiceDate > clientLastServices[orc.cliente_id].date) {
+                                    clientLastServices[orc.cliente_id] = { 
+                                        date: lastServiceDate, 
+                                        dias_retorno: servicoInfo.dias_retorno,
+                                        servico_nome: servicoInfo.descricao
+                                    };
+                                }
+                            }
+                        });
+                    }
+                });
+
+                for (const clienteId in clientLastServices) {
+                    const info = clientLastServices[clienteId];
+                    const dueDate = new Date(info.date);
+                    dueDate.setDate(dueDate.getDate() + info.dias_retorno);
+
+                    if (now >= dueDate) {
+                        const cliente = state.clientes.find(c => c.id == clienteId);
+                        if (cliente) {
+                            suggestions.push({
+                                cliente,
+                                servico_nome: info.servico_nome,
+                                dueDate: formatDate(dueDate)
+                            });
+                        }
+                    }
+                }
+
+                if (suggestions.length === 0) {
+                    suggestedFollowupsList.innerHTML = renderEmptyState('Nenhuma sugestão de follow-up no momento.', 'Serviços com tempo de retorno definido aparecerão aqui.');
+                } else {
+                    suggestedFollowupsList.innerHTML = suggestions.map(sug => `
+                        <li>
+                            <div>
+                                <strong>${sug.cliente.nome}</strong><br>
+                                <small>Sugerido para: ${sug.servico_nome} (Vencido em: ${sug.dueDate})</small>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-success schedule-followup-btn" data-cliente-id="${sug.cliente.id}" data-cliente-nome="${sug.cliente.nome}" data-servico-nome="${sug.servico_nome}">Agendar</button>
+                                <button class="btn btn-sm btn-secondary complete-followup-btn" data-cliente-id="${sug.cliente.id}" data-servico-nome="${sug.servico_nome}">Concluir</button>
+                            </div>
+                        </li>
+                    `).join('');
+                }
+            };
+
+            const renderInactiveClients = () => {
+                const periodBtn = inactivePeriodFilter.querySelector('.active');
+                if (!periodBtn) return;
+                const period = periodBtn.dataset.period;
+                const now = new Date();
+                
+                const clientLastService = {};
+                const clientLTV = {};
+
+                state.orcamentos.forEach(orc => {
+                    if (orc.cliente_id) {
+                        if(orc.status === 'Finalizado') {
+                            clientLTV[orc.cliente_id] = (clientLTV[orc.cliente_id] || 0) + orc.valor_total;
+                        }
+                        const serviceDate = new Date(orc.updated_at);
+                        if (!clientLastService[orc.cliente_id] || serviceDate > clientLastService[orc.cliente_id]) {
+                            clientLastService[orc.cliente_id] = serviceDate;
+                        }
+                    }
+                });
+
+                let clientList = [];
+                if (period === 'all') {
+                    clientList = state.clientes;
+                } else {
+                    const periodNum = parseInt(period, 10);
+                    clientList = state.clientes.filter(cliente => {
+                        const lastServiceDate = clientLastService[cliente.id];
+                        if (!lastServiceDate) return false;
+                        
+                        const diffTime = Math.abs(now - lastServiceDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (periodNum === 60) return diffDays >= periodNum;
+                        return diffDays >= periodNum && diffDays < (periodNum + 15);
+                    });
+                }
+
+                if (inactiveClientsList) {
+                    if (clientList.length === 0) {
+                        const message = period === 'all' ? 'Nenhum cliente cadastrado.' : `Nenhum cliente na faixa de ${period} dias.`;
+                        const suggestion = period === 'all' ? 'Cadastre clientes na aba "Clientes".' : 'Selecione outro período.';
+                        inactiveClientsList.innerHTML = renderEmptyState(message, suggestion);
+                    } else {
+                        inactiveClientsList.innerHTML = clientList.map(cliente => {
+                            const lastDate = clientLastService[cliente.id] ? formatDate(clientLastService[cliente.id]) : 'Nunca';
+                            const ltv = clientLTV[cliente.id] ? formatCurrency(clientLTV[cliente.id]) : 'R$ 0,00';
+                            return `
+                                <li data-cliente-id="${cliente.id}" data-cliente-nome="${cliente.nome}" data-cliente-telefone="${cliente.telefone}">
+                                    <div>
+                                        <strong>${cliente.nome}</strong><br>
+                                        <small>Último Serviço: ${lastDate} | <span class="client-value">Valor Total: ${ltv}</span></small>
+                                    </div>
+                                </li>
+                            `;
+                        }).join('');
+                    }
+                }
+            };
+
+            const handleCrmSubmit = async (e) => {
+                e.preventDefault();
+                const clienteId = crmClienteSelect.value;
+                const interactionType = $('#crm-interaction-type').value;
+                const notes = $('#crm-notes').value.trim();
+                const followUpDate = $('#crm-follow-up-date').value || null;
+
+                if (!clienteId || !notes) {
+                    showNotification('Cliente e Notas são obrigatórios.', 'warning');
+                    return;
+                }
+
+                const { error } = await db.from('crm_interactions').insert({ cliente_id: clienteId, interaction_type: interactionType, notes, follow_up_date: followUpDate });
+                if (error) {
+                    showNotification(`Erro ao salvar: ${error.message}`, 'error');
+                } else {
+                    showNotification('Interação registrada!', 'success');
+                    crmInteractionForm.reset();
+                    fetchAllData();
+                }
+            };
+
+            const handleDeleteInteraction = (id) => {
+                showConfirmModal('Excluir Interação?', 'Esta ação não pode ser desfeita.', async () => {
+                    const { error } = await db.from('crm_interactions').delete().eq('id', id);
+                    if (error) {
+                        showNotification(`Erro ao excluir: ${error.message}`, 'error');
+                    } else {
+                        showNotification('Interação excluída.', 'success');
+                        fetchAllData();
+                    }
+                    hideConfirmModal();
+                });
+            };
+
+            const openDispatchView = () => {
+                const listContainer = $('#dispatch-client-list');
+                const clientsInList = Array.from(inactiveClientsList.querySelectorAll('li'));
+                
+                if (clientsInList.length === 0) {
+                    showNotification('Não há clientes na lista selecionada para contatar.', 'warning');
+                    return;
+                }
+                
+                state.persistentImageDataURL = null; 
+                listContainer.innerHTML = clientsInList.map(li => li.outerHTML).join('');
+                resetComposer();
+                dispatchViewModal.classList.add('active');
+            };
+
+            const resetComposer = () => {
+                $('#composer-placeholder').classList.remove('hidden');
+                $('#composer-content').classList.add('hidden');
+                $('#composer-client-name').textContent = '';
+                $('#composer-message-body').value = '';
+                $('#send-dispatch-message-btn').disabled = true;
+                state.activeDispatchClient = null;
+                const activeLi = $('#dispatch-client-list .active');
+                if(activeLi) activeLi.classList.remove('active');
+            };
+
+            const activateComposer = (clientLi) => {
+                if (clientLi.classList.contains('contacted')) return;
+
+                const prevActive = $('#dispatch-client-list .active');
+                if(prevActive) prevActive.classList.remove('active');
+                clientLi.classList.add('active');
+
+                const cliente = {
+                    id: clientLi.dataset.clienteId,
+                    nome: clientLi.dataset.clienteNome,
+                    telefone: clientLi.dataset.clienteTelefone,
+                };
+                state.activeDispatchClient = cliente;
+
+                $('#composer-placeholder').classList.add('hidden');
+                $('#composer-content').classList.remove('hidden');
+                $('#composer-client-name').textContent = cliente.nome;
+                $('#send-dispatch-message-btn').disabled = false;
+
+                const templateSelect = $('#composer-template-select');
+                const period = inactivePeriodFilter.querySelector('.active').dataset.period;
+                
+                if (period === 'all') {
+                    templateSelect.innerHTML = `
+                        <option value="4">Modelo 4: Contato Geral</option>
+                        <option value="5">Modelo 5: Promoção da Semana</option>
+                        <option value="6">Modelo 6: Serviço Sazonal</option>
+                    `;
+                } else {
+                    templateSelect.innerHTML = `
+                        <option value="1">Modelo 1: Lembrete Amigável</option>
+                        <option value="2">Modelo 2: Oferta Especial</option>
+                        <option value="3">Modelo 3: Manutenção</option>
+                    `;
+                }
+                templateSelect.dispatchEvent(new Event('change'));
+
+                if (state.persistentImageDataURL) {
+                    $('#composer-image-preview').src = state.persistentImageDataURL;
+                    $('#image-preview-wrapper').style.display = 'flex';
+                }
+            };
+
+            const updateComposerMessage = () => {
+                if (!state.activeDispatchClient) return;
+                const templateId = $('#composer-template-select').value;
+                let message = $(`#msg-template-${templateId}`).value;
+                const period = inactivePeriodFilter.querySelector('.active').dataset.period;
+                const periodText = period === 'all' ? 'um tempo' : (period === '60' ? '60 dias' : `${period} dias`);
+                
+                message = message.replace(/\[NOME DO CLIENTE\]/g, state.activeDispatchClient.nome)
+                                 .replace(/\[TEMPO\]/g, periodText);
+
+                $('#composer-message-body').value = message;
+            };
+            
+            const fetchAllData = async () => {
+                const [clientesRes, interactionsRes, orcamentosRes, servicosRes] = await Promise.all([
+                    db.from('clientes').select('id, nome, telefone'),
+                    db.from('crm_interactions').select(`*, clientes(id, nome)`).order('created_at', { ascending: false }),
+                    db.from('orcamentos').select('cliente_id, status, updated_at, valor_total, orcamento_itens(servico_id)').order('updated_at', { ascending: false }),
+                    db.from('servicos').select('id, descricao, dias_retorno')
+                ]);
+
+                if (clientesRes.error) showNotification('Erro ao carregar clientes.', 'error');
+                else state.clientes = clientesRes.data;
+
+                if (interactionsRes.error) showNotification('Erro ao carregar interações.', 'error');
+                else state.interactions = interactionsRes.data;
+
+                if (orcamentosRes.error) showNotification('Erro ao carregar orçamentos.', 'error');
+                else state.orcamentos = orcamentosRes.data;
+
+                if (servicosRes.error) showNotification('Erro ao carregar serviços.', 'error');
+                else state.servicos = servicosRes.data;
+                
+                populateClientSelect();
+                renderAllLists();
+            };
+
+            // --- EVENT LISTENERS ---
+            crmInteractionForm.addEventListener('submit', handleCrmSubmit);
+            searchCrmInput.addEventListener('input', debounce(renderCrmInteractionList, 300));
+            bulkContactBtn.addEventListener('click', openDispatchView);
+            
+            crmInteractionList.addEventListener('click', (e) => {
+                if (e.target.closest('.delete-interaction-btn')) {
+                    handleDeleteInteraction(e.target.closest('.delete-interaction-btn').dataset.id);
+                }
+            });
+
+            inactivePeriodFilter.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    inactivePeriodFilter.querySelector('.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    renderInactiveClients();
+                }
+            });
+
+            suggestedFollowupsList.addEventListener('click', async (e) => {
+                const scheduleBtn = e.target.closest('.schedule-followup-btn');
+                const completeBtn = e.target.closest('.complete-followup-btn');
+
+                if (scheduleBtn) {
+                    showConfirmModal(
+                        'Agendar Follow-up?',
+                        `Deseja criar um lembrete para contatar ${scheduleBtn.dataset.clienteNome} em 7 dias?`,
+                        async () => {
+                            const followUpDate = new Date();
+                            followUpDate.setDate(followUpDate.getDate() + 7);
+                            const notes = `Follow-up agendado para manutenção de ${scheduleBtn.dataset.servicoNome}.`;
+
+                            const { error } = await db.from('crm_interactions').insert({ cliente_id: scheduleBtn.dataset.clienteId, interaction_type: 'Agendamento', notes, follow_up_date: followUpDate.toISOString().split('T')[0] });
+                            if (error) { showNotification(`Erro ao agendar: ${error.message}`, 'error'); } 
+                            else { showNotification('Follow-up agendado com sucesso!', 'success'); fetchAllData(); }
+                            hideConfirmModal();
+                        }
+                    );
+                } else if (completeBtn) {
+                     const notes = `Follow-up concluído para ${completeBtn.dataset.servicoNome}.`;
+                     const { error } = await db.from('crm_interactions').insert({ cliente_id: completeBtn.dataset.clienteId, interaction_type: 'Follow-up Concluído', notes });
+                     if (error) { showNotification(`Erro ao concluir: ${error.message}`, 'error'); }
+                     else { showNotification('Follow-up marcado como concluído!', 'success'); fetchAllData(); }
+                }
+            });
+
+            // Listeners para o Modal de Disparo
+            $('#dispatch-view-close-btn').addEventListener('click', () => dispatchViewModal.classList.remove('active'));
+            $('#dispatch-client-list').addEventListener('click', (e) => {
+                const li = e.target.closest('li');
+                if (li) activateComposer(li);
+            });
+            $('#composer-template-select').addEventListener('change', updateComposerMessage);
+            $('#composer-image-input').addEventListener('change', (e) => {
+                const preview = $('#composer-image-preview');
+                const wrapper = $('#image-preview-wrapper');
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        state.persistentImageDataURL = event.target.result;
+                        preview.src = state.persistentImageDataURL;
+                        wrapper.style.display = 'flex';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            $('#remove-image-btn').addEventListener('click', () => {
+                state.persistentImageDataURL = null;
+                $('#composer-image-input').value = '';
+                $('#composer-image-preview').src = '';
+                $('#image-preview-wrapper').style.display = 'none';
+            });
+
+            $('#send-dispatch-message-btn').addEventListener('click', async () => {
+                if (!state.activeDispatchClient) return;
+
+                const message = $('#composer-message-body').value;
+                const telefone = state.activeDispatchClient.telefone;
+
+                if (!telefone) {
+                    showNotification('Este cliente não possui um número de telefone cadastrado.', 'error');
+                    return;
+                }
+                
+                try {
+                    await db.from('crm_interactions').insert({
+                        cliente_id: state.activeDispatchClient.id,
+                        interaction_type: 'WhatsApp',
+                        notes: `Mensagem enviada: "${message.substring(0, 100)}..."`
+                    });
+                    
+                    showNotification('Interação registrada! Abrindo WhatsApp...', 'success');
+                    
+                    const cleanPhone = `55${telefone.replace(/\D/g, '')}`;
+                    const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
+
+                    const clientLi = $(`#dispatch-client-list li[data-cliente-id="${state.activeDispatchClient.id}"]`);
+                    if(clientLi) clientLi.classList.add('contacted');
+                    
+                    resetComposer();
+                    fetchAllData();
+                } catch (err) {
+                    showNotification('Erro ao registrar ou abrir o WhatsApp.', 'error');
+                    console.error('Dispatch error:', err);
+                }
+            });
+
+            // Listeners para Modais Globais
+            const confirmModalCancelBtn = confirmModal.querySelector('#modal-cancel-btn');
+            if(confirmModalCancelBtn) confirmModalCancelBtn.addEventListener('click', hideConfirmModal);
+            
+            const confirmModalConfirmBtn = confirmModal.querySelector('#modal-confirm-btn');
+            if(confirmModalConfirmBtn) confirmModalConfirmBtn.addEventListener('click', () => {
+                if (typeof onConfirmCallback === 'function') onConfirmCallback();
+            });
+
+            // Inicializa a página
+            fetchAllData();
+        });
+    </script>
+</body>
+</html>
