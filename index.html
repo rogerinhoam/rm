@@ -1073,6 +1073,9 @@
             <button class="nav-btn" data-tab="servicos" role="tab" aria-selected="false" aria-controls="servicos-tab"><i class="fas fa-tools" aria-hidden="true"></i> Serviços</button>
             <button class="nav-btn" data-tab="novo-orcamento" role="tab" aria-selected="false" aria-controls="novo-orcamento-tab"><i class="fas fa-file-invoice" aria-hidden="true"></i> Orçamento</button>
             <button class="nav-btn" data-tab="historico" role="tab" aria-selected="false" aria-controls="historico-tab"><i class="fas fa-history" aria-hidden="true"></i> Histórico</button>
+            <!-- ABAS ADICIONADAS -->
+            <button class="nav-btn" data-tab="crm" role="tab" aria-selected="false" aria-controls="crm-tab"><i class="fas fa-headset" aria-hidden="true"></i> CRM</button>
+            <button class="nav-btn" data-tab="despesas" role="tab" aria-selected="false" aria-controls="despesas-tab"><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Despesas</button>
         </nav>
 
         <main>
@@ -1348,6 +1351,19 @@
                     </div>
                 </div>
             </section>
+            
+            <!-- CONTEÚDO DAS NOVAS ABAS ADICIONADAS -->
+            <section id="crm-tab" class="tab-content" role="tabpanel">
+                <div class="card">
+                    <!-- O conteúdo de crm.html será carregado aqui -->
+                </div>
+            </section>
+
+            <section id="despesas-tab" class="tab-content" role="tabpanel">
+                <div class="card">
+                     <!-- O conteúdo de despesas.html será carregado aqui -->
+                </div>
+            </section>
         </main>
     </div>
     
@@ -1568,18 +1584,60 @@
                     });
                 }
             };
+            
+            /**
+             * Loads HTML content from a file into a tab.
+             * @param {string} tabId - The ID of the tab (e.g., 'crm', 'despesas').
+             */
+            const loadTabContent = async (tabId) => {
+                const container = $(`#${tabId}-tab .card`);
+                if (!container) {
+                    console.error(`Container for tab #${tabId}-tab .card not found.`);
+                    return;
+                }
+
+                // Show a loading message
+                container.innerHTML = `<div class="empty-list-message"><p><i class="fas fa-spinner fa-spin"></i> Carregando conteúdo...</p></div>`;
+
+                try {
+                    // Fetches the file (e.g., ./crm.html) from the same directory.
+                    const response = await fetch(`./${tabId}.html`); 
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    const htmlContent = await response.text();
+                    container.innerHTML = htmlContent;
+                } catch (error) {
+                    console.error(`Failed to load tab ${tabId}:`, error);
+                    container.innerHTML = `<div class="empty-list-message">
+                                       <p><i class="fas fa-exclamation-triangle"></i> Falha ao Carregar Conteúdo</p>
+                                       <small>Não foi possível carregar o arquivo <code>${tabId}.html</code>. Verifique se o arquivo existe no repositório e se o servidor está online.</small>
+                                   </div>`;
+                }
+            };
+
 
             /**
              * Switches the active tab view.
              * @param {string} tabId - The ID of the tab to activate (e.g., 'dashboard', 'clientes').
              * @param {Object} filterParams - Optional parameters to apply filters on the target tab.
              */
-            const showTab = (tabId, filterParams = {}) => { 
+            const showTab = async (tabId, filterParams = {}) => { 
                 $$('.tab-content').forEach(t => t.classList.remove('active')); 
-                $$('.nav-btn').forEach(b => b.classList.remove('active')); 
-                $(`#${tabId}-tab`).classList.add('active'); 
+                $$('.nav-btn').forEach(b => b.classList.remove('active'));
+                
+                const targetTabContent = $(`#${tabId}-tab`);
+                targetTabContent.classList.add('active'); 
                 $(`.nav-btn[data-tab="${tabId}"]`).classList.add('active'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                // --- NEW LOGIC FOR DYNAMIC LOADING ---
+                // Check if the tab is one of the dynamically loaded ones and if it hasn't been loaded yet.
+                if ((tabId === 'crm' || tabId === 'despesas') && !targetTabContent.dataset.loaded) {
+                    await loadTabContent(tabId);
+                    targetTabContent.dataset.loaded = 'true'; // Mark as loaded to prevent re-fetching
+                }
+                // --- END NEW LOGIC ---
 
                 // Apply filters if navigating to historico tab
                 if (tabId === 'historico') {
@@ -1592,10 +1650,9 @@
                     if (filterStatusSelect) filterStatusSelect.value = '';
                     if (filterStartDateInput) filterStartDateInput.value = '';
                     if (filterEndDateInput) filterEndDateInput.value = '';
-                    // No need to call renderOrcamentos if not on history tab
                 }
                 // Close client details panel if not on clients tab
-                if (clientDetailsPanel) { // Added null check
+                if (clientDetailsPanel) { 
                     clientDetailsPanel.style.display = 'none';
                 }
             };
@@ -1784,7 +1841,7 @@
                     icon.style.color = 'var(--accent-green)';
                     icon.style.display = 'block';
                 } else {
-                    icon.classList.remove('fa-check-circle');
+                    icon.classList.remove('fa-times-circle');
                     icon.classList.add('fa-times-circle');
                     icon.style.color = 'var(--accent-red-status)';
                     icon.style.display = 'block';
